@@ -4,10 +4,23 @@
         dark: false,
 
         init() {
-            this.dark = document.documentElement.getAttribute('data-theme') === 'dark';
+            const saved = localStorage.getItem('theme');
+
+            if (saved) {
+                this.dark = saved === 'dark';
+            } else {
+                this.dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            }
+
+            document.documentElement.setAttribute(
+                'data-theme',
+                this.dark ? 'dark' : 'light'
+            );
         },
 
         toggle() {
+            localStorage.setItem('theme', this.dark ? 'dark' : 'light');
+
             document.documentElement.setAttribute(
                 'data-theme',
                 this.dark ? 'dark' : 'light'
