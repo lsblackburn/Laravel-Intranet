@@ -15,9 +15,5 @@ class Leave extends Model
         'manager_comment',
         'additional_info'
     ];
-
-    public function employee()
-    {
-        return $this->belongsTo(Employee::class);
-    }
+    
 }
