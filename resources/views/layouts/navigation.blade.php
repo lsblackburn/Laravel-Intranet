@@ -105,7 +105,7 @@
                 {{ __('View Leave') }}
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('leave.create')" :active="request()->routeIs('leave.create')">
+            <x-responsive-nav-link :href="route('leave.form')" :active="request()->routeIs('leave.form')">
                 {{ __('Request Leave') }}
             </x-responsive-nav-link>
         </div>
