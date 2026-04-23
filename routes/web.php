@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LeaveController;
+use App\Http\Controllers\AdminRoutesController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -20,6 +21,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/leave/view', [LeaveController::class, 'view'])->name('leave.view');
     Route::get('/leave/form', [LeaveController::class, 'form'])->name('leave.form');
     Route::post('/leave/create', [LeaveController::class, 'create'])->name('leave.create');
+});
+
+Route::middleware(['auth', 'role:admin'])->group(function () {
+    Route::get('/admin/dashboard', [AdminRoutesController::class, 'dashboard'])->name('admin.dashboard');
 });
 
 require __DIR__.'/auth.php';
