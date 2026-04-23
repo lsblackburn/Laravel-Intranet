@@ -49,6 +49,10 @@
                             <x-text-textarea id="additional_info" class="block mt-1 w-full" type="textarea" name="additional_info" :value="old('additional_info')" />
                         </div>
 
+                        <x-primary-button>
+                            {{ __('Submit Request') }}
+                        </x-primary-button>
+
                     </form>
 
                 </div>
