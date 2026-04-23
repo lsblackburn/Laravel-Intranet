@@ -18,6 +18,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::get('/leave', [LeaveController::class, 'view'])->name('leave.view');
+    Route::post('/leave/create', [LeaveController::class, 'create'])->name('leave.create');
 });
 
 require __DIR__.'/auth.php';

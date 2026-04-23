@@ -15,7 +15,7 @@
                         Annual Leave Request Details
                     </h2>
 
-                    <form method="POST" action="" class="mt-6 space-y-6">
+                    <form method="POST" action="{{ route('leave.create') }}" class="mt-6 space-y-6">
 
                         @csrf
 
