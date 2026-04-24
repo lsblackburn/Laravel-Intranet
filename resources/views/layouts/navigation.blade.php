@@ -131,6 +131,16 @@
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
 
+             @if (auth()->user()->isAdmin())
+                <x-responsive-nav-link :href="route('admin.leave-requests')" :active="request()->routeIs('admin.leave-requests')">
+                    {{ __('View Leave Requests') }}
+                </x-responsive-nav-link>
+
+                <x-responsive-nav-link :href="route('admin.users')" :active="request()->routeIs('admin.users')">
+                    {{ __('User Management') }}
+                </x-responsive-nav-link>
+            @endif
+
             <x-responsive-nav-link :href="route('leave.view')" :active="request()->routeIs('leave.view')">
                 {{ __('View Leave') }}
             </x-responsive-nav-link>
