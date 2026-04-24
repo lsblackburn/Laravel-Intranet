@@ -16,7 +16,7 @@
                     @if (auth()->user()->isAdmin())
                         <div class="relative flex items-center group">
                             <button class="inline-flex items-center px-1 pt-1 border-b-2 h-full text-sm font-medium leading-5 transition duration-150 ease-in-out
-                                {{ request()->routeIs('leave.*')
+                                {{ request()->routeIs('admin.*')
                                     ? 'border-[--color-primary] text-[--color-text]'
                                     : 'border-transparent text-[--color-subtletext] hover:text-[--color-text] hover:border-[--color-border]'
                                 }}">
