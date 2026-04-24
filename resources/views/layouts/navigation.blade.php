@@ -12,10 +12,40 @@
 
                 <!-- Navigation Links -->
                 <div class="hidden space-x-8 sm:-my-px sm:ms-10 sm:flex">
+
+                    @if (auth()->user()->isAdmin())
+                        <div class="relative flex items-center group">
+                            <button class="inline-flex items-center px-1 pt-1 border-b-2 h-full text-sm font-medium leading-5 transition duration-150 ease-in-out
+                                {{ request()->routeIs('leave.*')
+                                    ? 'border-[--color-primary] text-[--color-text]'
+                                    : 'border-transparent text-[--color-subtletext] hover:text-[--color-text] hover:border-[--color-border]'
+                                }}">
+                                {{ __('Admin Panel') }}
+
+                                <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            <div class="absolute left-0 top-full z-50 hidden w-48 rounded-md bg-[--color-card] shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block">
+                                <div class="py-1">
+                                    <a href="{{ route('admin.leave-requests') }}"
+                                    class="block px-4 py-2 text-sm text-[--color-text] hover:bg-[--color-surface-alt]">
+                                        {{ __('View Leave Requests') }}
+                                    </a>
+
+                                    <a href="{{ route('admin.users') }}"
+                                    class="block px-4 py-2 text-sm text-[--color-text] hover:bg-[--color-surface-alt]">
+                                        {{ __('User Management') }}
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
-
 
                     <div class="relative flex items-center group">
                         <button class="inline-flex items-center px-1 pt-1 border-b-2 h-full text-sm font-medium leading-5 transition duration-150 ease-in-out

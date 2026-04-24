@@ -12,4 +12,14 @@ class AdminRoutesController extends Controller
         return view('admin.dashboard');
     }
 
+    public function leaveRequests()
+    {
+        return view('admin.leave-requests');
+    }
+
+    public function users()
+    {
+        return view('admin.users');
+    }
+
 }
