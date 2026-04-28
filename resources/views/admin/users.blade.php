@@ -41,7 +41,7 @@
                             <!-- Actions -->
                             <td class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)]">
                                 @if (auth()->user()->id !== $user->id)
-                                    <a href="" class="text-blue-600 hover:underline">
+                                    <a href="{{ route('admin.users.edit', $user->id) }}" class="text-blue-600 hover:underline">
                                         Edit
                                     </a>
                                     <a href="" class="ml-4 text-red-600 hover:underline">
