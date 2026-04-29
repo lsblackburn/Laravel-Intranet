@@ -5,6 +5,7 @@ use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\AdminRoutesController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,6 +30,8 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/leave-requests', [AdminRoutesController::class, 'leaveRequests'])->name('admin.leave-requests');
     Route::get('/admin/users', [AdminRoutesController::class, 'users'])->name('admin.users');
     Route::get('/admin/users/edit/{user}', [AdminRoutesController::class, 'edit_user'])->name('admin.users.edit');
+    Route::get('/admin/users/create', [AdminRoutesController::class, 'register_user'])->name('admin.users.create');
+    Route::post('/admin/users/register', [RegisteredUserController::class, 'store'])->name('admin.users.register');
     Route::patch('/admin/users/update/{user}', [UserManagementController::class, 'update'])->name('admin.users.update');
     Route::put('/admin/users/password/{user}', [PasswordController::class, 'update'])->name('admin.users.password.update');
     Route::delete('/admin/users/delete/{user}', [ProfileController::class, 'destroy'])->name('admin.users.delete');

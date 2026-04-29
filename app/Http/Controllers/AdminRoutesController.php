@@ -37,4 +37,9 @@ class AdminRoutesController extends Controller
         return view('admin.edit-user', compact('user'));
     }
 
+    public function register_user()
+    {
+        return view('auth.register');
+    }
+
 }
