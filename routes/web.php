@@ -4,6 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\LeaveController;
 use App\Http\Controllers\AdminRoutesController;
 use App\Http\Controllers\UserManagementController;
+use App\Http\Controllers\Auth\PasswordController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -29,6 +30,7 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::get('/admin/users', [AdminRoutesController::class, 'users'])->name('admin.users');
     Route::get('/admin/users/edit/{user}', [AdminRoutesController::class, 'edit_user'])->name('admin.users.edit');
     Route::patch('/admin/users/update/{user}', [UserManagementController::class, 'update'])->name('admin.users.update');
+    Route::put('/admin/users/password/{user}', [PasswordController::class, 'update'])->name('admin.users.password.update');
     
     Route::post('/admin/users/promote/{user}', [UserManagementController::class, 'promote'])->name('admin.users.promote');
     Route::post('/admin/users/demote/{user}', [UserManagementController::class, 'demote'])->name('admin.users.demote');
