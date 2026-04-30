@@ -37,6 +37,9 @@ Route::middleware(['auth', 'role:admin'])->group(function () {
     Route::delete('/admin/users/delete/{user}', [ProfileController::class, 'destroy'])->name('admin.users.delete');
     Route::post('/admin/users/promote/{user}', [UserManagementController::class, 'promote'])->name('admin.users.promote');
     Route::post('/admin/users/demote/{user}', [UserManagementController::class, 'demote'])->name('admin.users.demote');
+
+    Route::post('/admin/leave-requests/accept/{request}', [LeaveController::class, 'accept_leave_request'])->name('admin.leave-requests.accept');
+    Route::post('/admin/leave-requests/decline/{request}', [LeaveController::class, 'decline_leave_request'])->name('admin.leave-requests.decline');
 });
 
 require __DIR__.'/auth.php';
