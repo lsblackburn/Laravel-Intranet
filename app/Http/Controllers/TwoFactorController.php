@@ -61,9 +61,7 @@ class TwoFactorController extends Controller
 
         RateLimiter::clear($this->otpThrottleKey($request, $user));
 
-        $remember = (bool) $request->session()->get('2fa:remember', false);
-
-        Auth::login($user, $remember);
+        Auth::login($user);
 
         // Clear 2FA session placeholders and harden session
         $request->session()->forget(['2fa:user_id', '2fa:remember']);

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\RateLimiter;
 use PragmaRX\Google2FA\Google2FA;
@@ -42,7 +43,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertGuest();
         $response->assertRedirect(route('2fa.verify'));
         $response->assertSessionHas('2fa:user_id', $user->id);
-        $response->assertSessionHas('2fa:remember', true);
+        $response->assertSessionMissing('2fa:remember');
         $this->assertSame('existing-remember-token', $user->fresh()->getRememberToken());
     }
 
@@ -111,6 +112,21 @@ class TwoFactorAuthenticationTest extends TestCase
 
         $this->assertAuthenticatedAs($user);
         $response->assertRedirect(route('dashboard'));
+    }
+
+    public function test_valid_otp_does_not_create_a_remember_me_cookie(): void
+    {
+        $user = $this->createUserWithTwoFactorSecret();
+        $otp = (new Google2FA())->getCurrentOtp($user->google2fa_secret);
+
+        $response = $this->withSession([
+            '2fa:user_id' => $user->id,
+            '2fa:remember' => true,
+        ])->post(route('2fa'), ['one_time_password' => $otp]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard'));
+        $response->assertCookieMissing(Auth::guard('web')->getRecallerName());
     }
 
     public function test_valid_otp_disables_two_factor(): void
