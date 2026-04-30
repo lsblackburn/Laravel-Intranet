@@ -42,30 +42,21 @@ class LeaveController extends Controller
         return redirect()->route('leave.view')->with('success', 'Leave request created successfully.');
     }
 
-    public function accept_leave_request(Request $request, $id)
+    public function leave_response(Request $request, $id)
     {
         if (!Auth::user()->hasRole('admin')) {
             abort(403, 'Unauthorized action.');
         }
 
-        $leaveRequest = Leave::findOrFail($id);
-        $leaveRequest->status = 'accepted';
-        $leaveRequest->save();
-
-        return redirect()->route('admin.leave-requests')->with('success', 'Leave request accepted successfully.');
-    }
-
-    public function decline_leave_request(Request $request, $id)
-    {
-        if (!Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
+        if ($request->input('response') !== 'approved' && $request->input('response') !== 'rejected') {
+            return redirect()->route('admin.leave-requests')->with('error', 'Invalid response value.');
         }
 
         $leaveRequest = Leave::findOrFail($id);
-        $leaveRequest->status = 'rejected';
+        $leaveRequest->status = $request->input('response');
         $leaveRequest->save();
 
-        return redirect()->route('admin.leave-requests')->with('success', 'Leave request declined successfully.');
+        return redirect()->route('admin.leave-requests')->with('success', "Leave request {$request->input('response')} successfully.");
     }
 
 }
