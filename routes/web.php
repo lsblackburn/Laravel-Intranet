@@ -12,7 +12,7 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-Route::get('/leave-requests/calendar-events', [LeaveController::class, 'calendarEvents'])->name('leave-requests.calendar-events');
+Route::get('/leave-requests/calendar-events', [LeaveController::class, 'calendar_events'])->name('leave-requests.calendar-events');
 
 Route::get('/dashboard', function () {
     return view('dashboard');
@@ -29,7 +29,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/leave-requests', [AdminRoutesController::class, 'leaveRequests'])->name('admin.leave-requests');
+    Route::get('/admin/leave-requests', [AdminRoutesController::class, 'leave_requests'])->name('admin.leave-requests');
     Route::get('/admin/users', [AdminRoutesController::class, 'users'])->name('admin.users');
     Route::get('/admin/users/edit/{user}', [AdminRoutesController::class, 'edit_user'])->name('admin.users.edit');
     Route::get('/admin/users/create', [AdminRoutesController::class, 'register_user'])->name('admin.users.create');
