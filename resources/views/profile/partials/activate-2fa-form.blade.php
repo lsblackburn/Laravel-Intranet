@@ -10,7 +10,7 @@
     </header>
 
     @auth
-        @php $enabled = auth()->user()->google2fa_secret; @endphp
+        @php $enabled = auth()->user()->hasTwoFactorEnabled(); @endphp
 
         <x-primary-link href="{{ $enabled ? route('2fa.disable.form') : route('2fa.setup') }}">
             {{ $enabled ? 'Disable 2FA' : 'Enable 2FA' }}

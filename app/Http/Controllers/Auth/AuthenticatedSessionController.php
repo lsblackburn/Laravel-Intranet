@@ -30,7 +30,7 @@ class AuthenticatedSessionController extends Controller
         $user = Auth::user();
 
         // If user has 2FA enabled, require OTP challenge
-        if ($user->google2fa_secret) {
+        if ($user->hasTwoFactorEnabled()) {
             Auth::guard('web')->logout();
 
             // Park the user ID until they complete 2FA

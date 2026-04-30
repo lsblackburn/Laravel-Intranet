@@ -41,6 +41,11 @@ class User extends Authenticatable
         return $this->role === 'employee';
     }
 
+    public function hasTwoFactorEnabled(): bool
+    {
+        return ! empty($this->getRawOriginal('google2fa_secret'));
+    }
+
     public function hasRole(string $role): bool
     {
         return $this->role === $role;

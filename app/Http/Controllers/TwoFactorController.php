@@ -78,7 +78,7 @@ class TwoFactorController extends Controller
 
         $user = Auth::user();
 
-        if ($user->google2fa_secret) {
+        if ($user->hasTwoFactorEnabled()) {
             return redirect()->route('dashboard')->with('error', '2FA already enabled.');
         }
 
@@ -129,7 +129,7 @@ class TwoFactorController extends Controller
     {
         $user = Auth::user();
 
-        if (!$user->google2fa_secret) {
+        if (! $user->hasTwoFactorEnabled()) {
             return redirect()->route('dashboard')->with('error', '2FA is not enabled.');
         }
 
@@ -144,7 +144,7 @@ class TwoFactorController extends Controller
 
         $user = Auth::user();
 
-        if (!$user->google2fa_secret) {
+        if (! $user->hasTwoFactorEnabled()) {
             return redirect()->route('dashboard')->with('error', '2FA is not enabled.');
         }
 
