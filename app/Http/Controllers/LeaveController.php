@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 use App\Models\Leave;
 
@@ -62,6 +63,26 @@ class LeaveController extends Controller
         $leaveRequest->save();
 
         return redirect()->route('admin.leave-requests')->with('success', "Leave request {$request->input('response')} successfully.");
+    }
+
+    public function calendar_events(): JsonResponse
+    {
+        $leaves = Leave::with('user')
+            ->where('status', 'approved')
+            ->get();
+
+        $events = $leaves->map(function ($leave) {
+            return [
+                'title' => $leave->user->name . ' - Annual Leave',
+                'start' => $leave->start_date,
+                'end' => \Carbon\Carbon::parse($leave->end_date)->addDay()->toDateString(),
+                'allDay' => true,
+                'backgroundColor' => 'var(--color-success)',
+                'borderColor' => 'var(--color-success)',
+            ];
+        });
+
+        return response()->json($events);
     }
 
 }
