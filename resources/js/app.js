@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         events: '/leave-requests/calendar-events',
 
-        dayMaxEvents: 2,
         eventDisplay: 'block',
 
         editable: false,
