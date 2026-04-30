@@ -15,6 +15,7 @@ class RequireTwoFactorForRememberedSession
         $user = $guard->user();
 
         if ($user && $guard->viaRemember() && $user->hasTwoFactorEnabled()) {
+            $request->session()->put('url.intended', $request->fullUrl());
             $guard->logoutCurrentDevice();
 
             $request->session()->put('2fa:user_id', $user->id);

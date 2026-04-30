@@ -136,7 +136,7 @@ class TwoFactorAuthenticationTest extends TestCase
         $user = $this->createUserWithTwoFactorSecret();
         $guard = Auth::guard('web');
 
-        $request = Request::create('/dashboard', 'GET');
+        $request = Request::create('/verify-email/123/example?expires=1700000000&signature=test', 'GET');
         $request->setLaravelSession($this->app['session']->driver());
 
         $guard->setRequest($request);
@@ -151,6 +151,10 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertSame(route('2fa.verify'), $response->getTargetUrl());
         $this->assertSame($user->id, $request->session()->get('2fa:user_id'));
         $this->assertTrue($request->session()->get('2fa:remember'));
+        $this->assertSame(
+            'http://localhost/verify-email/123/example?expires=1700000000&signature=test',
+            $request->session()->get('url.intended')
+        );
     }
 
     public function test_valid_otp_disables_two_factor(): void
