@@ -81,6 +81,14 @@ class TwoFactorAuthenticationTest extends TestCase
         $this->assertNotSame($secret, DB::table('users')->whereKey($user->id)->value('google2fa_secret'));
     }
 
+    public function test_two_factor_secret_is_hidden_from_serialized_user_payloads(): void
+    {
+        $user = $this->createUserWithTwoFactorSecret();
+
+        $this->assertSame($user->google2fa_secret, $user->fresh()->google2fa_secret);
+        $this->assertArrayNotHasKey('google2fa_secret', $user->fresh()->toArray());
+    }
+
     public function test_enabling_two_factor_requires_a_setup_secret_in_the_session(): void
     {
         $user = User::factory()->create();
