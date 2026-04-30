@@ -12,6 +12,8 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
+Route::get('/leave-requests/calendar-events', [LeaveController::class, 'calendarEvents'])->name('leave-requests.calendar-events');
+
 Route::get('/dashboard', function () {
     return view('dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
