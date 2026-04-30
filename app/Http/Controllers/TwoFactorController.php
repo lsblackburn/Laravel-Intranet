@@ -65,7 +65,7 @@ class TwoFactorController extends Controller
         $request->session()->forget(['2fa:user_id', '2fa:remember']);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard'));
+        return redirect()->intended(route('dashboard'))->with('success', 'You are now logged in!');
     }
 
     public function setup()
