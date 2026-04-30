@@ -157,6 +157,29 @@ class TwoFactorAuthenticationTest extends TestCase
         );
     }
 
+    public function test_remembered_two_factor_session_does_not_store_intended_url_for_non_get_requests(): void
+    {
+        $user = $this->createUserWithTwoFactorSecret();
+        $guard = Auth::guard('web');
+
+        $request = Request::create('/profile', 'PATCH');
+        $request->setLaravelSession($this->app['session']->driver());
+
+        $guard->setRequest($request);
+        $guard->setUser($user);
+
+        $viaRemember = new \ReflectionProperty($guard, 'viaRemember');
+        $viaRemember->setValue($guard, true);
+
+        $response = (new RequireTwoFactorForRememberedSession())->handle($request, fn () => response('ok'));
+
+        $this->assertGuest();
+        $this->assertSame(route('2fa.verify'), $response->getTargetUrl());
+        $this->assertSame($user->id, $request->session()->get('2fa:user_id'));
+        $this->assertTrue($request->session()->get('2fa:remember'));
+        $this->assertNull($request->session()->get('url.intended'));
+    }
+
     public function test_valid_otp_disables_two_factor(): void
     {
         $user = $this->createUserWithTwoFactorSecret();
