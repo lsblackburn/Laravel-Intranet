@@ -114,6 +114,8 @@ class TwoFactorController extends Controller
         $secret = session('2fa_secret');
         $google2fa = new Google2FA();
 
+        $secret = bcrypt($secret);
+
         if ($google2fa->verifyKey($secret, $request->otp)) {
             $user->google2fa_secret = $secret;
             $user->save();
