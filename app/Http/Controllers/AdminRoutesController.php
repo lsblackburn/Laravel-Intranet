@@ -16,15 +16,34 @@ class AdminRoutesController extends Controller
             ->join('users', 'leaves.user_id', '=', 'users.id')
             ->where('leaves.status', 'pending')
             ->get();
+        // This query retrieves all pending leave requests along with the name of the user who made each request
 
         return view('admin.leave-requests', compact('leaveRequests'));
     }
 
     public function users()
     {
-        $users = User::all();
+        $users = User::orderBy('role', 'asc')->orderBy('name', 'asc')->get();
+        // Order users by role first, then by name alphabetically
 
         return view('admin.users', compact('users'));
+    }
+
+
+    public function edit_user(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return redirect()->route('admin.users')->with('error', 'You cannot edit yourself in the Admin panel.');
+        }
+
+        $user = User::findOrFail($user->id);
+
+        return view('admin.edit-user', compact('user'));
+    }
+
+    public function register_user()
+    {
+        return view('auth.register');
     }
 
 }

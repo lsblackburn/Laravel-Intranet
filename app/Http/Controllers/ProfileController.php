@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\View\View;
+use App\Models\User;
 
 class ProfileController extends Controller
 {
@@ -40,17 +41,27 @@ class ProfileController extends Controller
     /**
      * Delete the user's account.
      */
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request, ?User $user = null): RedirectResponse
     {
+        $targetUser = $user ?? $request->user();
+
+        if ($user && $targetUser->id === $request->user()->id) {
+            return redirect()->route('admin.users')->with('error', 'You cannot delete yourself through the Admin panel.');
+        }
+
         $request->validateWithBag('userDeletion', [
             'password' => ['required', 'current_password'],
         ]);
 
-        $user = $request->user();
+        if ($targetUser->id === $request->user()->id) {
+            Auth::logout();
+        }
 
-        Auth::logout();
+        $targetUser->delete();
 
-        $user->delete();
+        if ($user) {
+            return redirect()->route('admin.users')->with('success', 'User deleted successfully.');
+        }
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
