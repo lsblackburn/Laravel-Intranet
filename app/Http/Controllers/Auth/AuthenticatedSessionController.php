@@ -25,8 +25,6 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        $request->authenticate();
-
         // If user has 2FA enabled, require OTP challenge
         if (Auth::user()->google2fa_secret) {
             // Park the user ID until they complete 2FA
@@ -35,6 +33,8 @@ class AuthenticatedSessionController extends Controller
             $request->session()->regenerate();
             return redirect()->route('2fa.verify');
         }
+
+        $request->authenticate();
 
         $request->session()->regenerate();
 
