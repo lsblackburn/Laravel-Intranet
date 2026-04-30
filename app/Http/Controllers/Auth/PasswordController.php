@@ -19,6 +19,10 @@ class PasswordController extends Controller
 
         $targetUser = $user ?? $request->user();
 
+        if ($user && $targetUser->id === $request->user()->id) {
+            return redirect()->route('admin.users')->with('error', 'You cannot update your own password in the Admin panel.');
+        }
+
         $validated = $request->validateWithBag('updatePassword', [
             'current_password' => $user ? ['nullable'] : ['required', 'current_password'],
             'password' => ['required', Password::defaults(), 'confirmed'],
