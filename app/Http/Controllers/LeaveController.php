@@ -73,7 +73,7 @@ class LeaveController extends Controller
 
         $events = $leaves->map(function ($leave) {
             return [
-                'title' => $leave->user->name . ' - Annual Leave',
+                'title' => $leave->user->name . ' - Annual Leave' . ($leave->is_half_day ? '(Half Day)' : ''),
                 'start' => $leave->start_date,
                 'end' => \Carbon\Carbon::parse($leave->end_date)->addDay()->toDateString(),
                 'allDay' => true,
