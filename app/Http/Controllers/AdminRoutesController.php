@@ -10,7 +10,7 @@ use App\Models\User;
 class AdminRoutesController extends Controller
 {
 
-    public function leaveRequests()
+    public function leave_requests()
     {
         $leaveRequests = Leave::select('leaves.*', 'users.name as user_name')
             ->join('users', 'leaves.user_id', '=', 'users.id')

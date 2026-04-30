@@ -12,11 +12,18 @@ Route::get('/', function () {
     return view('auth.login');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::middleware(['auth'])->group(function () {
 
-Route::middleware('auth')->group(function () {
+    Route::get('/dashboard', function () {
+        return view('dashboard');
+    })->middleware(['verified'])->name('dashboard');
+
+    Route::get('/calendar', function () {
+        return view('calendar');
+    })->name('calendar');
+
+    Route::get('/leave-requests/calendar-events', [LeaveController::class, 'calendar_events'])->name('leave-requests.calendar-events');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -27,7 +34,7 @@ Route::middleware('auth')->group(function () {
 });
 
 Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/admin/leave-requests', [AdminRoutesController::class, 'leaveRequests'])->name('admin.leave-requests');
+    Route::get('/admin/leave-requests', [AdminRoutesController::class, 'leave_requests'])->name('admin.leave-requests');
     Route::get('/admin/users', [AdminRoutesController::class, 'users'])->name('admin.users');
     Route::get('/admin/users/edit/{user}', [AdminRoutesController::class, 'edit_user'])->name('admin.users.edit');
     Route::get('/admin/users/create', [AdminRoutesController::class, 'register_user'])->name('admin.users.create');

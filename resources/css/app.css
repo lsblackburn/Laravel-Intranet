@@ -53,3 +53,111 @@
     --color-warning-text: #FCD34D;
     --color-danger-text: #FDA4AF;
 }
+
+
+/* =========================
+   FullCalendar Theming
+   ========================= */
+.fc {
+    background-color: var(--color-card);
+    color: var(--color-text);
+
+    --fc-border-color: var(--color-border);
+    --fc-daygrid-event-dot-width: 6px;
+}
+
+.fc-toolbar-title {
+    font-size: 24px;
+}
+
+/* Grid + table styling */
+.fc-theme-standard td,
+.fc-theme-standard th {
+    background-color: var(--color-card);
+    border-color: var(--color-border);
+}
+
+/* Header toolbar */
+.fc .fc-toolbar-title {
+    color: var(--color-text);
+    font-weight: 600;
+}
+
+/* Day numbers */
+.fc .fc-daygrid-day-number {
+    color: var(--color-subtletext);
+}
+
+/* Events */
+.fc .fc-event {
+    background-color: var(--color-primary);
+    border: none;
+    color: #fff;
+    border-radius: 6px;
+    padding: 2px 6px;
+}
+
+/* Today highlight */
+.fc .fc-day-today {
+    background-color: rgba(75, 41, 72, 0.08);
+}
+
+/* Buttons (next/prev/today) */
+.fc .fc-button {
+    background-color: var(--color-primary);
+    border: none;
+    color: #fff;
+    box-shadow: none;
+}
+
+.fc .fc-button:hover {
+    background-color: var(--color-primary-hover);
+}
+
+.fc .fc-button:disabled {
+    opacity: 0.6;
+}
+
+/* =========================
+   Dark mode overrides
+   ========================= */
+
+[data-theme="dark"] .fc {
+    background-color: var(--color-card);
+    color: var(--color-text);
+}
+
+[data-theme="dark"] .fc-theme-standard td,
+[data-theme="dark"] .fc-theme-standard th {
+    background-color: var(--color-card);
+    border-color: var(--color-border);
+}
+
+[data-theme="dark"] .fc-daygrid-day-number {
+    color: var(--color-subtletext);
+}
+
+[data-theme="dark"] .fc-day-today {
+    background-color: rgba(201, 139, 193, 0.15);
+}
+
+[data-theme="dark"] .fc-event {
+    background-color: var(--color-primary);
+    color: #1F1720;
+}
+
+.fc, .fc * {
+    transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+}
+
+.fc-event.fc-event-start.fc-event-end:hover {
+    width: fit-content; 
+}
+
+@media (max-width: 390px) {
+    .fc .fc-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0;
+    }
+}

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Http\JsonResponse;
 
 use App\Models\Leave;
 
@@ -62,6 +64,53 @@ class LeaveController extends Controller
         $leaveRequest->save();
 
         return redirect()->route('admin.leave-requests')->with('success', "Leave request {$request->input('response')} successfully.");
+    }
+
+    public function calendar_events(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'start' => ['nullable', 'date', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/', 'before_or_equal:end'],
+            'end'   => ['nullable', 'date', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/', 'after_or_equal:start'],
+        ]);
+
+        $startDate = $this->calendarRequestDate($validated['start'] ?? null);
+        $endDate = $this->calendarRequestDate($validated['end'] ?? null);
+
+        $query = Leave::with('user')
+            ->where('status', 'approved');
+
+        // Only return events that overlap with the requested date range in the calendar
+        if ($startDate !== null) {
+            $query->where('end_date', '>=', $startDate);
+        }
+
+        if ($endDate !== null) {
+            $query->where('start_date', '<', $endDate);
+        }
+
+        $leaves = $query->get();
+
+        $events = $leaves->map(function ($leave) {
+            return [
+                'title' => $leave->user->name . ' - Annual Leave' . ($leave->is_half_day ? '(Half Day)' : ''),
+                'start' => $leave->start_date,
+                'end' => Carbon::parse($leave->end_date)->addDay()->toDateString(),
+                'allDay' => true,
+                'backgroundColor' => 'var(--color-success)',
+                'borderColor' => 'var(--color-success)',
+            ];
+        });
+
+        return response()->json($events);
+    }
+
+    private function calendarRequestDate(?string $value): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return substr($value, 0, 10);
     }
 
 }
