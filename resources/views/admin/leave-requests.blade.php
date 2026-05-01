@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-7xl mx-auto py-6 px-3 sm:px-6 lg:px-8">
 
         <div class="overflow-x-auto rounded-2xl border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
             <table class="min-w-full text-sm text-left">
