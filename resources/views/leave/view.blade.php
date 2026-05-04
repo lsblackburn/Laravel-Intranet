@@ -64,7 +64,15 @@
 
                                 <!-- Actions -->
                                 <td class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)]">
-                                    No actions available
+
+                                    @if ($request->status == 'pending')
+                                        <x-primary-link href="{{ route('leave.edit', ['request' => $request->id]) }}">
+                                            Modify
+                                        </x-primary-link>
+                                    @else
+                                        No actions available
+                                    @endif
+
                                 </td>
 
                             </tr>
