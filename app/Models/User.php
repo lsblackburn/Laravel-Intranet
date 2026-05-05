@@ -7,11 +7,11 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\LeaveSetting;
 use Carbon\Carbon;
-use Carbon\CarbonConverterInterface;
 
 #[Fillable(['name', 'email', 'password', 'colour'])]
 #[Hidden(['password', 'remember_token', 'google2fa_secret'])]
@@ -73,6 +73,11 @@ class User extends Authenticatable
     public function hasRole(string $role): bool
     {
         return $this->role === $role;
+    }
+
+    public function leaves(): HasMany
+    {
+        return $this->hasMany(Leave::class);
     }
 
     public function calculateLeaveAllowance(): float
