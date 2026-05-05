@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->string('colour')->default('#000000')->after('remember_token');
+            $table->string('colour')->default('#' . substr(md5(rand()), 0, 6))->after('remember_token')->unique();
         });
     }
 
