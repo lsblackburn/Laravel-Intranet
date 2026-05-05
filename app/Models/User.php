@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\LeaveSetting;
+use Carbon\Carbon;
 
 #[Fillable(['name', 'email', 'password', 'colour'])]
 #[Hidden(['password', 'remember_token', 'google2fa_secret'])]
@@ -71,4 +73,29 @@ class User extends Authenticatable
     {
         return $this->role === $role;
     }
+
+    public function calculateLeaveAllowance(): float
+    {
+        $settings = LeaveSetting::first();
+
+        if (! $settings || ! $settings->base_allowance) {
+            // If no settings are found, or base allowance is not set, return the user's leave_allowance or default to 20
+            return (float) $this->leave_allowance;
+        }
+
+        $yearsWorked = Carbon::parse($this->employment_start_date)->diffInYears(now());
+
+        if ($yearsWorked < $settings->increase_after_years) { 
+            // If user hasn't reached the threshold for increase, return base allowance
+            return (float) $settings->base_allowance;
+        }
+
+        $extraYears = $yearsWorked - $settings->increase_after_years + 1;
+        // Calculate the allowance based on the base allowance and the increase for extra years, ensuring it does not exceed the maximum allowance
+
+        $allowance = $settings->base_allowance + ($extraYears * $settings->increase_by_days);
+
+        return min($allowance, $settings->maximum_allowance);
+    }
+
 }
