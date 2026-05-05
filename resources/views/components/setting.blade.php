@@ -49,7 +49,7 @@
             </div>
         </label>
 
-        @if (auth()->user()->isAdmin())
+        @if (auth()->user()?->isAdmin())
             <x-setting-link href="" label="App Configuration">
                 App Configuration
             </x-setting-link>
