@@ -73,21 +73,26 @@
                                         <x-primary-link href="{{ route('leave.edit', ['request' => $request->id]) }}">
                                             Modify
                                         </x-primary-link>
+
+                                        <form
+                                            x-data
+                                            action="{{ route('leave.delete', $request->id) }}"
+                                            method="POST"
+                                            x-on:submit.prevent="$dispatch('confirm-cancel-leave', { form: $event.target })"
+                                        >
+                                            @csrf
+                                            @method('DELETE')
+
+                                            <x-primary-button>
+                                                Cancel
+                                            </x-primary-button>
+                                        </form>
+
+                                    @else
+                                        <span class="text-gray-400">
+                                            No actions available
+                                        </span>
                                     @endif
-
-                                    <form
-                                        x-data
-                                        action="{{ route('leave.delete', $request->id) }}"
-                                        method="POST"
-                                        x-on:submit.prevent="$dispatch('confirm-cancel-leave', { form: $event.target })"
-                                    >
-                                        @csrf
-                                        @method('DELETE')
-
-                                        <x-primary-button>
-                                            Cancel
-                                        </x-primary-button>
-                                    </form>
 
                                 </td>
 
