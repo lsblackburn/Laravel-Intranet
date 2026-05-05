@@ -20,7 +20,9 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'suggestedColour' => User::generateUniqueColour(),
+        ]);
     }
 
     /**
@@ -34,17 +36,18 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'colour' => ['nullable', 'string', 'size:7', 'regex:/^#[0-9A-Fa-f]{6}$/', 'unique:'.User::class],
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'colour' => $request->input('colour') ?: User::generateUniqueColour(),
         ]);
 
         event(new Registered($user));
 
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
-
     }
 }

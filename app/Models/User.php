@@ -10,12 +10,32 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'colour'])]
 #[Hidden(['password', 'remember_token', 'google2fa_secret'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
+
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if (! empty($user->colour)) {
+                return;
+            }
+
+            $user->colour = static::generateUniqueColour();
+        });
+    }
+
+    public static function generateUniqueColour(): string
+    {
+        do {
+            $colour = sprintf('#%06X', random_int(0, 0xFFFFFF));
+        } while (static::where('colour', $colour)->exists());
+
+        return $colour;
+    }
 
     /**
      * Get the attributes that should be cast.
@@ -28,6 +48,7 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'google2fa_secret' => 'encrypted',
             'password' => 'hashed',
+            'colour' => 'string',
         ];
     }
 

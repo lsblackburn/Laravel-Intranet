@@ -38,7 +38,6 @@ class LeaveController extends Controller
 
     public function create(Request $request)
     {
-
         $validated = $request->validate([
             'start_date' => 'required|date_format:d-m-Y',
             'end_date' => 'required|date_format:d-m-Y|after_or_equal:start_date',
@@ -137,8 +136,7 @@ class LeaveController extends Controller
                 'start' => $leave->start_date,
                 'end' => Carbon::parse($leave->end_date)->addDay()->toDateString(),
                 'allDay' => true,
-                'backgroundColor' => 'var(--color-success)',
-                'borderColor' => 'var(--color-success)',
+                'backgroundColor' => $leave->user->colour,
             ];
         });
 
