@@ -50,7 +50,9 @@
         </label>
 
         @if (auth()->user()?->isAdmin())
-            <x-setting-link href="" label="App Configuration">
+            <div class="w-full h-[2px] bg-[var(--color-border)] my-1"></div>
+
+            <x-setting-link href="{{ route('admin.view-config') }}" label="App Configuration">
                 App Configuration
             </x-setting-link>
         @endif

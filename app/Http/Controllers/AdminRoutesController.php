@@ -48,4 +48,9 @@ class AdminRoutesController extends Controller
         ]);
     }
 
+    public function view_config()
+    {
+        return view('admin.app-config');
+    }
+
 }
