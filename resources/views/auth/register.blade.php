@@ -45,7 +45,7 @@
             <x-text-input id="colour" class="block mt-1 w-full"
                             type="color"
                             name="colour"
-                            :value="old('colour', '#000000')"
+                            :value="old('colour', $suggestedColour)"
                             required autocomplete="colour" />
 
             <x-input-error :messages="$errors->get('colour')" class="mt-2" />

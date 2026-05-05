@@ -17,6 +17,26 @@ class User extends Authenticatable
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
 
+    protected static function booted(): void
+    {
+        static::creating(function (User $user): void {
+            if (! empty($user->colour)) {
+                return;
+            }
+
+            $user->colour = static::generateUniqueColour();
+        });
+    }
+
+    public static function generateUniqueColour(): string
+    {
+        do {
+            $colour = sprintf('#%06X', random_int(0, 0xFFFFFF));
+        } while (static::where('colour', $colour)->exists());
+
+        return $colour;
+    }
+
     /**
      * Get the attributes that should be cast.
      *

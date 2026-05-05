@@ -43,7 +43,9 @@ class AdminRoutesController extends Controller
 
     public function register_user()
     {
-        return view('auth.register');
+        return view('auth.register', [
+            'suggestedColour' => User::generateUniqueColour(),
+        ]);
     }
 
 }
