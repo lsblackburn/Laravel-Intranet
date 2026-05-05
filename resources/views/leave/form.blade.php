@@ -15,26 +15,54 @@
                         Annual Leave Request Details
                     </h2>
 
-                    <form method="POST" action="{{ route('leave.create') }}" class="mt-6 space-y-6">
+                    <form
+                        method="POST"
+                        action="{{ route('leave.create') }}"
+                        x-data="{
+                            startDate: @js(old('start_date', '')),
+                            endDate: @js(old('end_date', '')),
+                            halfDay: @js((bool) old('is_half_day', false)),
+                            syncHalfDayEndDate() {
+                                if (this.halfDay) {
+                                    this.endDate = this.startDate;
+                                    this.$nextTick(() => this.$refs.endDate.blur());
+                                }
+                            },
+                        }"
+                        x-init="$watch('startDate', () => syncHalfDayEndDate()); $watch('halfDay', () => syncHalfDayEndDate())"
+                        class="mt-6 space-y-6"
+                    >
 
                         @csrf
 
                         <div class="mt-5">
                             <x-input-label for="start_date" :value="__('Start Date*')" />
-                            <x-text-input id="start_date" class="block mt-1 w-full" type="text" name="start_date" :value="old('start_date')" required autofocus />
+                            <x-text-input id="start_date" class="block mt-1 w-full" type="text" name="start_date" x-model="startDate" required autofocus />
                             <x-input-error :messages="$errors->get('start_date')" class="mt-2" />
                         </div>
                         
                         <div class="mt-5">
                             <x-input-label for="end_date" :value="__('End Date*')" />
-                            <x-text-input id="end_date" class="block mt-1 w-full" type="text" name="end_date" :value="old('end_date')" required autofocus />
+                            <x-text-input
+                                id="end_date"
+                                class="block mt-1 w-full"
+                                type="text"
+                                name="end_date"
+                                x-ref="endDate"
+                                x-model="endDate"
+                                x-bind:readonly="halfDay"
+                                x-bind:tabindex="halfDay ? -1 : 0"
+                                x-bind:class="{ 'cursor-not-allowed opacity-75 pointer-events-none': halfDay }"
+                                required
+                                autofocus
+                            />
                             <x-input-error :messages="$errors->get('end_date')" class="mt-2" />
                         </div>
 
                         <div class="block mt-5">
                             <label for="is_half_day" class="inline-flex items-center">
                                 <input type="hidden" name="is_half_day" value="0">
-                                <input id="is_half_day" value="1" type="checkbox" class="rounded bg-[--color-background] border-[--color-border] text-[--color-primary] shadow-sm focus:ring-[--color-primary]" name="is_half_day">
+                                <input id="is_half_day" value="1" type="checkbox" class="rounded bg-[--color-background] border-[--color-border] text-[--color-primary] shadow-sm focus:ring-[--color-primary]" name="is_half_day" x-model="halfDay">
                                 <span class="ms-2 text-sm text-[--color-subtletext]">{{ __('Is this a half-day leave?') }}</span>
                             </label>
                         </div>
