@@ -11,6 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use App\Models\LeaveSetting;
 use Carbon\Carbon;
+use Carbon\CarbonConverterInterface;
 
 #[Fillable(['name', 'email', 'password', 'colour'])]
 #[Hidden(['password', 'remember_token', 'google2fa_secret'])]
@@ -96,6 +97,26 @@ class User extends Authenticatable
         $allowance = $settings->base_allowance + ($extraYears * $settings->increase_by_days);
 
         return min($allowance, $settings->maximum_allowance);
+    }
+
+    public function approvedLeaveDaysUsed(): float
+    {
+        return $this->leaves()
+            ->where('status', 'approved')
+            ->get()
+            ->sum(function($leave){
+                if ($leave->is_half_day) {
+                    return 0.5;
+                }
+
+                return Carbon::parse($leave->start_date)
+                ->diffInDays(Carbon::parse($leave->end_date)) + 1;
+            });
+    }
+
+    public function remainingLeaveAllowance(): float
+    {
+        return $this->leave_allowance - $this->approvedLeaveDaysUsed();
     }
 
 }
