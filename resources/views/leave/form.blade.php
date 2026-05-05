@@ -40,13 +40,13 @@
                         </div>
 
                         <div class="mt-5">
-                            <x-input-label for="reason" :value="__('Reason for Leave*')" />
+                            <x-input-label for="reason" :value="__('Reason for Leave* (255 characters max)')" />
                             <x-text-textarea id="reason" class="block mt-1 w-full" type="textarea" name="reason" :value="old('reason')" required autofocus />
                             <x-input-error :messages="$errors->get('reason')" class="mt-2" />
                         </div>
 
                         <div class="mt-5">
-                            <x-input-label for="additional_info" :value="__('Additional Information')" />
+                            <x-input-label for="additional_info" :value="__('Additional Information (255 characters max)')" />
                             <x-text-textarea id="additional_info" class="block mt-1 w-full" type="textarea" name="additional_info" :value="old('additional_info')" />
                         </div>
 
