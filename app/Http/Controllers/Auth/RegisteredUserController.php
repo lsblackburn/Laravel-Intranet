@@ -34,7 +34,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'colour' => ['required', 'string', 'size:7', 'regex:/^#[0-9A-Fa-f]{6}$/'],
+            'colour' => ['required', 'string', 'size:7', 'regex:/^#[0-9A-Fa-f]{6}$/', 'unique:'.User::class],
         ]);
 
         $user = User::create([
@@ -47,6 +47,5 @@ class RegisteredUserController extends Controller
         event(new Registered($user));
 
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
-
     }
 }
