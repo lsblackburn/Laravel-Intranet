@@ -89,6 +89,10 @@ class User extends Authenticatable
             return (float) $this->leave_allowance;
         }
 
+        if (! $this->employment_start_date) {
+            return (float) $this->leave_allowance;
+        }
+
         $yearsWorked = Carbon::parse($this->employment_start_date)->diffInYears(now());
 
         if ($yearsWorked < $settings->increase_after_years) { 

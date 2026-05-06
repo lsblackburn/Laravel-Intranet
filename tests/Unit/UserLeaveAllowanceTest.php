@@ -54,6 +54,23 @@ class UserLeaveAllowanceTest extends TestCase
         $this->assertSame(18.0, $user->remainingLeaveAllowance());
     }
 
+    public function test_calculating_leave_allowance_preserves_existing_allowance_without_employment_start_date(): void
+    {
+        LeaveSetting::first()->update([
+            'base_allowance' => 20,
+            'increase_after_years' => 2,
+            'increase_by_days' => 1,
+            'maximum_allowance' => 30,
+        ]);
+
+        $user = User::factory()->create([
+            'employment_start_date' => null,
+            'leave_allowance' => 25,
+        ]);
+
+        $this->assertSame(25.0, $user->calculateLeaveAllowance());
+    }
+
     private function createLeave(User $user, string $startDate, string $endDate, string $status): Leave
     {
         $leave = Leave::create([

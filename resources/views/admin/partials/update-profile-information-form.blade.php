@@ -10,7 +10,9 @@
     </header>
 
     @php
-        $employment_start_date = \Carbon\Carbon::parse($user->employment_start_date)->format('d-m-Y');
+        $employment_start_date = $user->employment_start_date
+            ? \Carbon\Carbon::parse($user->employment_start_date)->format('d-m-Y')
+            : '';
     @endphp
 
     <form method="post" action="{{ route('admin.users.update', $user->id) }}" class="mt-6 space-y-6">
@@ -34,7 +36,7 @@
         <div class="mt-4">
             <x-input-label for="employment_start_date" :value="__('Employment Start Date')" />
             <x-text-input id="employment_start_date" class="block mt-1 w-full" :value="old('employment_start_date', $employment_start_date)" type="text"
-                name="employment_start_date" required autofocus />
+                name="employment_start_date" autofocus />
             <x-input-error :messages="$errors->get('employment_start_date')" class="mt-2" />
         </div>
 
