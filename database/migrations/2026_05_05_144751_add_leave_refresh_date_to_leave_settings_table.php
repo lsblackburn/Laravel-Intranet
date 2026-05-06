@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('leave_settings', function (Blueprint $table) {
-            $table->unsignedTinyInteger('leave_refresh_day')->default(1);
-            $table->unsignedTinyInteger('leave_refresh_month')->default(1);
+            $table->unsignedTinyInteger('leave_refresh_day')->after('maximum_allowance')->default(1);
+            $table->unsignedTinyInteger('leave_refresh_month')->after('leave_refresh_day')->default(1);
         });
     }
 

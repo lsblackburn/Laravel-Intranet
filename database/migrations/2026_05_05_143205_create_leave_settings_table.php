@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -19,6 +20,11 @@ return new class extends Migration
             $table->decimal('maximum_allowance', 5, 2)->default(30);
             $table->timestamps();
         });
+
+        DB::table('leave_settings')->insert([
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
