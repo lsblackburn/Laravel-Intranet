@@ -53,6 +53,7 @@ function initialiseLeaveDatepicker(selector) {
 
 initialiseLeaveDatepicker('#start_date');
 initialiseLeaveDatepicker('#end_date');
+initialiseLeaveDatepicker('#employment_start_date');
 
 document.addEventListener('DOMContentLoaded', function () {
     const calendarEl = document.getElementById('dashboard-calendar');

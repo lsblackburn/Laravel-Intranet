@@ -13,7 +13,7 @@ use Illuminate\Notifications\Notifiable;
 use App\Models\LeaveSetting;
 use Carbon\Carbon;
 
-#[Fillable(['name', 'email', 'password', 'colour'])]
+#[Fillable(['name', 'email', 'password', 'colour', 'employment_start_date'])]
 #[Hidden(['password', 'remember_token', 'google2fa_secret'])]
 class User extends Authenticatable
 {

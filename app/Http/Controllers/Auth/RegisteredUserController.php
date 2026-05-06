@@ -36,6 +36,7 @@ class RegisteredUserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'employment_start_date' => ['required', 'date', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/'],
             'colour' => ['nullable', 'string', 'size:7', 'regex:/^#[0-9A-Fa-f]{6}$/', 'unique:'.User::class],
         ]);
 
@@ -43,6 +44,7 @@ class RegisteredUserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
+            'employment_start_date' => $request->employment_start_date,
             'colour' => $request->input('colour') ?: User::generateUniqueColour(),
         ]);
 
