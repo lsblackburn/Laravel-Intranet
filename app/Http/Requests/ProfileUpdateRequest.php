@@ -29,6 +29,10 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         $user = $this->route('user') ?? $this->user();
+        $employmentStartDateRules = $this->canUpdateEmploymentStartDate()
+            ? ['sometimes', 'nullable', 'date', 'before:today', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/']
+            : ['prohibited'];
+
         return [
             'name' => ['required', 'string', 'max:255'],
 
@@ -41,8 +45,13 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class, 'email')->ignore($user?->id),
             ],
 
-            'employment_start_date' => ['sometimes', 'nullable', 'date', 'before:today', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/'],
+            'employment_start_date' => $employmentStartDateRules,
         ];
+    }
+
+    private function canUpdateEmploymentStartDate(): bool
+    {
+        return $this->route('user') instanceof User || $this->user()?->isAdmin();
     }
 
     private function normalizeEmploymentStartDate(mixed $value): mixed

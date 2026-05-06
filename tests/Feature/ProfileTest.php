@@ -30,7 +30,6 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
-                'employment_start_date' => now()->subYear()->format('d-m-Y'),
             ]);
 
         $response
@@ -53,7 +52,6 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => $user->email,
-                'employment_start_date' => now()->subYear()->format('d-m-Y'),
             ]);
 
         $response
@@ -87,9 +85,30 @@ class ProfileTest extends TestCase
         $this->assertSame('2024-05-01', $user->employment_start_date);
     }
 
+    public function test_employee_cannot_update_their_own_employment_start_date(): void
+    {
+        $user = User::factory()->create([
+            'employment_start_date' => '2024-05-01',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'employment_start_date' => '01-05-2020',
+            ]);
+
+        $response->assertSessionHasErrors('employment_start_date');
+
+        $user->refresh();
+
+        $this->assertSame('2024-05-01', $user->employment_start_date);
+    }
+
     public function test_profile_information_cannot_be_updated_with_future_employment_start_date(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['role' => 'admin']);
 
         $response = $this
             ->actingAs($user)
