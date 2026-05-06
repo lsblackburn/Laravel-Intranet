@@ -37,7 +37,7 @@ class SyncLeaveAllowance extends Command
             return Command::SUCCESS; // exit early if not the right date
         }
 
-        User:query()->chunk(100, function ($users) {
+        User::query()->chunk(100, function ($users) {
             foreach ($users as $user) {
                 // Sync all users leave allowance on the refresh date
                 $user->update([
