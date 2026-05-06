@@ -38,7 +38,7 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class, 'email')->ignore($user?->id),
             ],
 
-            'employment_start_date' => ['required', 'date', 'before:today', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/'],
+            'employment_start_date' => ['nullable', 'date', 'before:today', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/'],
         ];
     }
 
