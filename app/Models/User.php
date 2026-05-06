@@ -106,22 +106,67 @@ class User extends Authenticatable
 
     public function approvedLeaveDaysUsed(): float
     {
-        return $this->leaves()
-            ->where('status', 'approved')
+        $settings = LeaveSetting::first();
+        $today = now();
+        $allowanceYearStart = $this->leaveAllowanceYearStart($settings, $today);
+        $allowanceYearEnd = $allowanceYearStart?->copy()->addYear();
+
+        $query = $this->leaves()->where('status', 'approved');
+
+        if ($allowanceYearStart && $allowanceYearEnd) {
+            $query
+                ->where('end_date', '>=', $allowanceYearStart->toDateString())
+                ->where('start_date', '<', $allowanceYearEnd->toDateString());
+        }
+
+        return $query
             ->get()
-            ->sum(function($leave){
+            ->sum(function ($leave) use ($allowanceYearStart, $allowanceYearEnd) {
                 if ($leave->is_half_day) {
                     return 0.5;
                 }
 
-                return Carbon::parse($leave->start_date)
-                ->diffInDays(Carbon::parse($leave->end_date)) + 1;
+                $startDate = Carbon::parse($leave->start_date);
+                $endDate = Carbon::parse($leave->end_date);
+
+                if ($allowanceYearStart && $startDate->lt($allowanceYearStart)) {
+                    $startDate = $allowanceYearStart->copy();
+                }
+
+                if ($allowanceYearEnd && $endDate->gte($allowanceYearEnd)) {
+                    $endDate = $allowanceYearEnd->copy()->subDay();
+                }
+
+                return $startDate->diffInDays($endDate) + 1;
             });
     }
 
     public function remainingLeaveAllowance(): float
     {
         return $this->leave_allowance - $this->approvedLeaveDaysUsed();
+    }
+
+    private function leaveAllowanceYearStart(?LeaveSetting $settings, Carbon $today): ?Carbon
+    {
+        if (! $settings?->leave_refresh_day || ! $settings?->leave_refresh_month) {
+            return null;
+        }
+
+        $refreshDate = $this->leaveRefreshDateForYear($settings, (int) $today->year);
+
+        if ($today->lt($refreshDate)) {
+            return $this->leaveRefreshDateForYear($settings, (int) $today->year - 1);
+        }
+
+        return $refreshDate;
+    }
+
+    private function leaveRefreshDateForYear(LeaveSetting $settings, int $year): Carbon
+    {
+        $month = (int) $settings->leave_refresh_month;
+        $day = min((int) $settings->leave_refresh_day, Carbon::create($year, $month, 1)->daysInMonth);
+
+        return Carbon::create($year, $month, $day)->startOfDay();
     }
 
 }
