@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
+use Illuminate\Support\Facades\Schedule;
 use Illuminate\Console\Command;
 use App\Models\LeaveSetting;
 use App\Models\User;
