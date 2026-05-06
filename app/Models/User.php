@@ -93,7 +93,7 @@ class User extends Authenticatable
             return (float) $this->leave_allowance;
         }
 
-        $yearsWorked = Carbon::parse($this->employment_start_date)->diffInYears(now());
+        $yearsWorked = (int) floor(Carbon::parse($this->employment_start_date)->diffInYears(now()));
 
         if ($yearsWorked < $settings->increase_after_years) { 
             // If user hasn't reached the threshold for increase, return base allowance

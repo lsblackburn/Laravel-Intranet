@@ -71,6 +71,42 @@ class UserLeaveAllowanceTest extends TestCase
         $this->assertSame(25.0, $user->calculateLeaveAllowance());
     }
 
+    public function test_leave_allowance_uses_whole_completed_years_for_service_increases(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-06'));
+        LeaveSetting::first()->update([
+            'base_allowance' => 20,
+            'increase_after_years' => 2,
+            'increase_by_days' => 1,
+            'maximum_allowance' => 30,
+        ]);
+
+        $user = User::factory()->create([
+            'employment_start_date' => '2024-04-06',
+            'leave_allowance' => 20,
+        ]);
+
+        $this->assertSame(21.0, $user->calculateLeaveAllowance());
+    }
+
+    public function test_leave_allowance_does_not_apply_next_increment_before_completed_anniversary(): void
+    {
+        Carbon::setTestNow(Carbon::parse('2026-05-06'));
+        LeaveSetting::first()->update([
+            'base_allowance' => 20,
+            'increase_after_years' => 2,
+            'increase_by_days' => 1,
+            'maximum_allowance' => 30,
+        ]);
+
+        $user = User::factory()->create([
+            'employment_start_date' => '2023-05-07',
+            'leave_allowance' => 20,
+        ]);
+
+        $this->assertSame(21.0, $user->calculateLeaveAllowance());
+    }
+
     private function createLeave(User $user, string $startDate, string $endDate, string $status): Leave
     {
         $leave = Leave::create([
