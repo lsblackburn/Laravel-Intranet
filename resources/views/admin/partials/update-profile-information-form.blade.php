@@ -33,7 +33,7 @@
 
         <div class="mt-4">
             <x-input-label for="employment_start_date" :value="__('Employment Start Date')" />
-            <x-text-input id="employment_start_date" class="block mt-1 w-full" :value="old('email', $employment_start_date)" type="text"
+            <x-text-input id="employment_start_date" class="block mt-1 w-full" :value="old('employment_start_date', $employment_start_date)" type="text"
                 name="employment_start_date" required autofocus />
             <x-input-error :messages="$errors->get('employment_start_date')" class="mt-2" />
         </div>
