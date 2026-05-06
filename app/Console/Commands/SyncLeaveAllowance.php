@@ -7,9 +7,10 @@ use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
 use App\Models\LeaveSetting;
 use App\Models\User;
+use Carbon\Carbon;
 
-#[Signature('app:sync-leave-allowance')]
-#[Description('Command description')]
+#[Signature('leave:sync-allowances')]
+#[Description('Sync leave allowances based on settings')]
 class SyncLeaveAllowance extends Command
 {
     /**
@@ -30,10 +31,7 @@ class SyncLeaveAllowance extends Command
 
         $today = now();
 
-        if (
-            $today->day !== $settings->leave_refresh_day ||
-            $today->month !== $settings->leave_refresh_month
-        ) {
+        if (! $today->isSameDay($this->leaveRefreshDateForYear($settings, (int) $today->year))) {
             return Command::SUCCESS; // exit early if not the right date
         }
 
@@ -47,5 +45,13 @@ class SyncLeaveAllowance extends Command
         });
 
         $this->info('Leave allowances synced successfully');
+    }
+
+    private function leaveRefreshDateForYear(LeaveSetting $settings, int $year): Carbon
+    {
+        $month = (int) $settings->leave_refresh_month;
+        $day = min((int) $settings->leave_refresh_day, Carbon::create($year, $month, 1)->daysInMonth);
+
+        return Carbon::create($year, $month, $day)->startOfDay();
     }
 }
