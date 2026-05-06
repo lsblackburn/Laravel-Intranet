@@ -30,6 +30,7 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
+                'employment_start_date' => now()->subYear()->format('d-m-Y'),
             ]);
 
         $response
@@ -52,6 +53,7 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => $user->email,
+                'employment_start_date' => now()->subYear()->format('d-m-Y'),
             ]);
 
         $response
@@ -59,6 +61,21 @@ class ProfileTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertNotNull($user->refresh()->email_verified_at);
+    }
+
+    public function test_profile_information_cannot_be_updated_with_future_employment_start_date(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+                'employment_start_date' => now()->addDay()->format('d-m-Y'),
+            ]);
+
+        $response->assertSessionHasErrors('employment_start_date');
     }
 
     public function test_user_can_delete_their_account(): void
