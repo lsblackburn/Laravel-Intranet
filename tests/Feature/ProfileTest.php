@@ -63,6 +63,30 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
+    public function test_employee_profile_update_preserves_hidden_employment_start_date(): void
+    {
+        $user = User::factory()->create([
+            'employment_start_date' => '2024-05-01',
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => 'Test User',
+                'email' => 'test@example.com',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+
+        $this->assertSame('Test User', $user->name);
+        $this->assertSame('test@example.com', $user->email);
+        $this->assertSame('2024-05-01', $user->employment_start_date);
+    }
+
     public function test_profile_information_cannot_be_updated_with_future_employment_start_date(): void
     {
         $user = User::factory()->create();

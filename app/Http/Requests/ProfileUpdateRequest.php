@@ -12,6 +12,10 @@ class ProfileUpdateRequest extends FormRequest
 {
     protected function prepareForValidation(): void
     {
+        if (! $this->request->has('employment_start_date')) {
+            return;
+        }
+
         $this->merge([
             'employment_start_date' => $this->normalizeEmploymentStartDate($this->input('employment_start_date')),
         ]);
@@ -25,6 +29,7 @@ class ProfileUpdateRequest extends FormRequest
     public function rules(): array
     {
         $user = $this->route('user') ?? $this->user();
+        $employmentStartDatePresenceRule = $this->requiresEmploymentStartDate() ? 'required' : 'sometimes';
 
         return [
             'name' => ['required', 'string', 'max:255'],
@@ -38,8 +43,13 @@ class ProfileUpdateRequest extends FormRequest
                 Rule::unique(User::class, 'email')->ignore($user?->id),
             ],
 
-            'employment_start_date' => ['nullable', 'date', 'before:today', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/'],
+            'employment_start_date' => [$employmentStartDatePresenceRule, 'date', 'before:today', 'regex:/^\d{4}-\d{2}-\d{2}(?:$|[T\s])/'],
         ];
+    }
+
+    private function requiresEmploymentStartDate(): bool
+    {
+        return $this->route('user') instanceof User || $this->user()?->isAdmin();
     }
 
     private function normalizeEmploymentStartDate(mixed $value): mixed
