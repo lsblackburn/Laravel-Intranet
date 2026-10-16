@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-(--color-text) leading-tight">
+        <h1 class="text-3xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-4xl">
             {{ __('User Management') }}
-        </h2>
+        </h1>
     </x-slot>
 
     <div class="max-w-7xl mx-auto py-6 px-3 sm:px-6 lg:px-8">
@@ -14,10 +14,10 @@
                 <thead
                     class="bg-[var(--color-surface-alt)] text-xs uppercase tracking-wider text-[var(--color-subtletext)]">
                     <tr>
-                        <th class="px-6 py-3 font-medium">User</th>
-                        <th class="px-6 py-3 font-medium">Email</th>
-                        <th class="px-6 py-3 font-medium">Role</th>
-                        <th class="px-6 py-3 font-medium text-right">Actions</th>
+                        <th class="px-6 py-4 font-medium">User</th>
+                        <th class="px-6 py-4 font-medium">Email</th>
+                        <th class="px-6 py-4 font-medium">Role</th>
+                        <th class="px-6 py-4 font-medium text-right">Actions</th>
                     </tr>
                 </thead>
 

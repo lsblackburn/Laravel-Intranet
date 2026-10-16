@@ -1,4 +1,4 @@
-<!DOCTYPE html x-data="themeHandler()" x-init="init()">
+<!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
@@ -23,19 +23,19 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="bg-(--color-background) antialiased">
+<body class="text-sm leading-relaxed text-(--color-text) antialiased [font-family:gotham,sans-serif] selection:bg-(--color-primary) selection:text-(--color-background) [&_:focus-visible]:outline-2 [&_:focus-visible]:outline-offset-4 [&_:focus-visible]:outline-(--color-primary) [&_button:not(:disabled)]:cursor-pointer [&_select]:cursor-pointer [&_*]:motion-reduce:transition-none min-h-screen bg-[radial-gradient(ellipse_at_20%_10%,var(--color-surface-alt),transparent_60%)] bg-(--color-background) antialiased">
 
     <x-setting />
 
     <div class="max-w-7xl mx-auto py-6 px-3 sm:px-6 lg:px-8">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-(--color-background)">
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
             <div>
                 <a href="{{ route('dashboard') }}">
                     <x-application-logo class="w-[250px] h-auto" />
                 </a>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-(--color-card) shadow-md overflow-hidden rounded-lg">
+            <div class="w-full sm:max-w-md mt-6 border border-(--color-border) p-8 bg-(--color-card) shadow-[0_16px_60px_rgb(48_32_43/0.06)] overflow-hidden rounded-2xl">
                 {{ $slot }}
             </div>
         </div>

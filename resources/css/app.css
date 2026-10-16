@@ -1,21 +1,21 @@
 @import "tailwindcss";
 @config "../../tailwind.config.js";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
 
-* {
-    font-family: "gotham", sans-serif;
-}
+/* Alpine hides interactive panels until initialization. */
+[x-cloak] { display: none !important; }
 
 :root {
-    --color-background: #F6F4F5;
-    --color-card: #FFFFFF;
-    --color-surface-alt: #EEE8EC;
-    --color-text: #1F1720;
+    --color-background: #f5f3ef;
+    --color-card: #fffefa;
+    --color-surface-alt: #eeebe6;
+    --color-text: #302b32;
 
-    --color-subtletext: #6F6570;
-    --color-border: #D9D0D8;
+    --color-subtletext: #777079;
+    --color-border: #e3dedf;
 
-    --color-primary: #4B2948;
-    --color-primary-hover: #3A1F37;
+    --color-primary: #633c59;
+    --color-primary-hover: #4d2c45;
 
     --color-accent: #5CC48A;
     --color-accent-hover: #49A874;
@@ -27,19 +27,20 @@
     --color-success-text: #1E854A;
     --color-warning-text: #B45309;
     --color-danger-text: #9F1239;
+    --workspace-shadow: 0 4px 24px rgb(48 32 43 / 3%);
 }
 
 [data-theme="dark"] {
-    --color-background: #151217;
-    --color-card: #332a35;
-    --color-surface-alt: #433a47;
-    --color-text: #F5F1F4;
+    --color-background: #19171c;
+    --color-card: #242127;
+    --color-surface-alt: #302b33;
+    --color-text: #f1eaf0;
 
-    --color-subtletext: #BDAFBC;
-    --color-border: #433746;
+    --color-subtletext: #b9aebb;
+    --color-border: #3c3440;
 
-    --color-primary: #C98BC1;
-    --color-primary-hover: #D7A3D0;
+    --color-primary: #dfb1d0;
+    --color-primary-hover: #efc9e3;
 
     --color-accent: #6EDC9C;
     --color-accent-hover: #8AE7B0;
@@ -51,8 +52,9 @@
     --color-success-text: #34D399;
     --color-warning-text: #FCD34D;
     --color-danger-text: #FDA4AF;
+    --workspace-shadow: 0 4px 24px rgb(0 0 0 / 8%);
+    color-scheme: dark;
 }
-
 
 /* =========================
    FullCalendar Theming
@@ -63,6 +65,8 @@
 
     --fc-border-color: var(--color-border);
     --fc-daygrid-event-dot-width: 6px;
+    --fc-today-bg-color: var(--color-surface-alt);
+    font-size: 12px;
 }
 
 .fc-toolbar-title {
@@ -85,28 +89,34 @@
 /* Day numbers */
 .fc .fc-daygrid-day-number {
     color: var(--color-subtletext);
+    padding: 8px 10px;
+    font-variant-numeric: tabular-nums;
 }
 
 /* Events */
 .fc .fc-event {
     background-color: var(--color-primary);
     border: none;
-    color: #fff;
-    border-radius: 6px;
-    padding: 2px 6px;
+    color: var(--color-background);
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11px;
 }
 
 /* Today highlight */
 .fc .fc-day-today {
-    background-color: rgba(75, 41, 72, 0.08);
+    background-color: var(--color-surface-alt);
 }
 
 /* Buttons (next/prev/today) */
 .fc .fc-button {
     background-color: var(--color-primary);
     border: none;
-    color: #fff;
+    color: var(--color-background);
     box-shadow: none;
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 12px;
 }
 
 .fc .fc-button:hover {
@@ -117,40 +127,14 @@
     opacity: 0.6;
 }
 
-/* =========================
-   Dark mode overrides
-   ========================= */
-
-[data-theme="dark"] .fc {
-    background-color: var(--color-card);
-    color: var(--color-text);
-}
-
-[data-theme="dark"] .fc-theme-standard td,
-[data-theme="dark"] .fc-theme-standard th {
-    background-color: var(--color-card);
-    border-color: var(--color-border);
-}
-
-[data-theme="dark"] .fc-daygrid-day-number {
-    color: var(--color-subtletext);
-}
-
-[data-theme="dark"] .fc-day-today {
-    background-color: rgba(201, 139, 193, 0.15);
-}
-
-[data-theme="dark"] .fc-event {
-    background-color: var(--color-primary);
-    color: #1F1720;
+.fc .fc-scrollgrid-section-header.fc-scrollgrid-section-sticky > *,
+.fc-theme-standard td {
+    padding-top: 0 !important;
+    padding-bottom: 0 !important;
 }
 
 .fc, .fc * {
     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
-}
-
-.fc-event.fc-event-start.fc-event-end:hover {
-    width: fit-content; 
 }
 
 @media (max-width: 390px) {
@@ -159,4 +143,15 @@
         align-items: flex-start;
         gap: 0;
     }
+}
+
+.fc .fc-scrollgrid { border-radius: 8px; overflow: hidden; }
+
+.fc .fc-col-header-cell { background: var(--color-surface-alt); }
+
+.fc .fc-col-header-cell-cushion { padding: 10px 4px; color: var(--color-subtletext); font-size: 11px; font-weight: 500; }
+
+
+@media (prefers-reduced-motion: reduce) {
+    .fc, .fc * { transition: none !important; }
 }

@@ -1,8 +1,8 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-(--color-text) leading-tight mb-2">
+        <h1 class="text-3xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-4xl">
             {{ __('Your Annual Leave') }}
-        </h2>
+        </h1>
     </x-slot>
 
     <x-dialog-box>
@@ -85,11 +85,11 @@
                     <thead
                         class="bg-[var(--color-surface-alt)] text-xs uppercase tracking-wider text-[var(--color-subtletext)]">
                         <tr>
-                            <th class="px-6 py-3 font-medium">Leave Type</th>
-                            <th class="px-6 py-3 font-medium">Start Date</th>
-                            <th class="px-6 py-3 font-medium">End Date</th>
-                            <th class="px-6 py-3 font-medium">Status</th>
-                            <th class="px-6 py-3 font-medium text-right">Actions</th>
+                            <th class="px-6 py-4 font-medium">Leave Type</th>
+                            <th class="px-6 py-4 font-medium">Start Date</th>
+                            <th class="px-6 py-4 font-medium">End Date</th>
+                            <th class="px-6 py-4 font-medium">Status</th>
+                            <th class="px-6 py-4 font-medium text-right">Actions</th>
                         </tr>
                     </thead>
 

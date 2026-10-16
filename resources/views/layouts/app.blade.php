@@ -21,7 +21,7 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="bg-(--color-background) antialiased">
+    <body class="text-sm leading-relaxed text-(--color-text) antialiased [font-family:gotham,sans-serif] selection:bg-(--color-primary) selection:text-(--color-background) [&_:focus-visible]:outline-2 [&_:focus-visible]:outline-offset-4 [&_:focus-visible]:outline-(--color-primary) [&_button:not(:disabled)]:cursor-pointer [&_select]:cursor-pointer [&_*]:motion-reduce:transition-none bg-(--color-background) antialiased">
 
         <x-setting/>
 
@@ -30,15 +30,15 @@
 
             <!-- Page Heading -->
             @isset($header)
-                <header class="bg-(--color-card) shadow">
-                    <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <header class="bg-transparent pt-[22px]">
+                    <div class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
                 </header>
             @endisset
 
             <!-- Page Content -->
-            <main>
+            <main class="pb-16">
 
                 <x-form-feedback />
 

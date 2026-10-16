@@ -1,9 +1,9 @@
 <x-app-layout>
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-(--color-text)  leading-tight">
+        <h1 class="text-3xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-4xl">
             {{ __('Two Factor Authentication Setup') }}
-        </h2>
+        </h1>
     </x-slot>
 
     <div class="py-6">

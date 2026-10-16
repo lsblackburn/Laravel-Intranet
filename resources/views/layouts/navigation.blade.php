@@ -1,4 +1,4 @@
-<nav x-data="{ open: false }" class="bg-(--color-card) border-b border-gray-100 dark:border-gray-700">
+<nav x-data="{ open: false }" class="border-b border-(--color-border) bg-(--color-card)">
     @php
         $unreadNotifications = Auth::user()->unreadNotifications()->latest()->take(5)->get();
         $unreadNotificationCount = Auth::user()->unreadNotifications()->count();
@@ -6,7 +6,7 @@
 
     <!-- Primary Navigation Menu -->
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
+        <div class="flex min-h-[68px] justify-between min-[421px]:min-h-20">
             <div class="flex">
                 <!-- Logo -->
                 <div class="shrink-0 flex items-center">
@@ -21,7 +21,7 @@
                     @if (auth()->user()->isAdmin())
                         <div class="relative flex items-center group">
                             <button
-                                class="inline-flex items-center px-1 pt-1 border-b-2 h-full text-xs md:text-sm font-medium leading-5 transition duration-150 ease-in-out
+                                class="inline-flex items-center px-1 pt-1 border-b-2 h-full group-focus-within:text-(--color-primary) text-xs md:text-sm font-medium leading-5 transition duration-150 ease-in-out
                                 {{ request()->routeIs('admin.*')
                                     ? 'border-(--color-primary) text-(--color-text)'
                                     : 'border-transparent text-(--color-subtletext) hover:text-(--color-text) hover:border-(--color-border)' }}">
@@ -35,15 +35,15 @@
                             </button>
 
                             <div
-                                class="absolute left-0 top-full z-50 hidden w-48 rounded-lg bg-(--color-card) shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block">
+                                class="absolute left-0 top-full z-50 hidden w-48 rounded-lg border border-(--color-border) bg-(--color-card) p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block group-focus-within:block">
                                 <div class="py-1">
                                     <a href="{{ route('admin.leave-requests') }}"
-                                        class="block px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
+                                        class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                         {{ __('View Leave Requests') }}
                                     </a>
 
                                     <a href="{{ route('admin.users') }}"
-                                        class="block px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
+                                        class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                         {{ __('User Management') }}
                                     </a>
                                 </div>
@@ -57,7 +57,7 @@
 
                     <div class="relative flex items-center group">
                         <button
-                            class="inline-flex items-center px-1 pt-1 border-b-2 h-full text-xs md:text-sm font-medium leading-5 transition duration-150 ease-in-out
+                            class="inline-flex items-center px-1 pt-1 border-b-2 h-full group-focus-within:text-(--color-primary) text-xs md:text-sm font-medium leading-5 transition duration-150 ease-in-out
                             {{ request()->routeIs('leave.*')
                                 ? 'border-(--color-primary) text-(--color-text)'
                                 : 'border-transparent text-(--color-subtletext) hover:text-(--color-text) hover:border-(--color-border)' }}">
@@ -71,15 +71,15 @@
                         </button>
 
                         <div
-                            class="absolute left-0 top-full z-50 hidden w-48 rounded-lg bg-(--color-card) shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block">
+                            class="absolute left-0 top-full z-50 hidden w-48 rounded-lg border border-(--color-border) bg-(--color-card) p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block group-focus-within:block">
                             <div class="py-1">
                                 <a href="{{ route('leave.view') }}"
-                                    class="block px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
+                                    class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                     {{ __('View Your Leave') }}
                                 </a>
 
                                 <a href="{{ route('leave.form') }}"
-                                    class="block px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
+                                    class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                     {{ __('Request Leave') }}
                                 </a>
                             </div>
@@ -136,7 +136,7 @@
                     <x-slot name="trigger">
                         <button
                             class="inline-flex items-center px-3 py-2 border border-transparent text-xs md:text-sm leading-4 font-medium rounded-lg text-(--color-subtletext) hover:text-(--color-text) hover:bg-(--color-surface-alt) focus:outline-none transition ease-in-out duration-150">
-                            <div>{{ Auth::user()->name }}</div>
+                            <span class="mr-[9px] inline-grid size-[30px] place-items-center rounded-full bg-(--color-surface-alt) font-semibold text-(--color-primary)" aria-hidden="true">{{ mb_substr(Auth::user()->name, 0, 1) }}</span><div>{{ Auth::user()->name }}</div>
 
                             <div class="ms-1">
                                 <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg"
