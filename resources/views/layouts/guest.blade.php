@@ -23,19 +23,19 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 
-<body class="bg-[--color-background] antialiased">
+<body class="bg-(--color-background) antialiased">
 
     <x-setting />
 
     <div class="max-w-7xl mx-auto py-6 px-3 sm:px-6 lg:px-8">
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-[--color-background]">
+        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-(--color-background)">
             <div>
                 <a href="{{ route('dashboard') }}">
                     <x-application-logo class="w-[250px] h-auto" />
                 </a>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-[--color-card] shadow-md overflow-hidden rounded-lg">
+            <div class="w-full sm:max-w-md mt-6 px-6 py-4 bg-(--color-card) shadow-md overflow-hidden rounded-lg">
                 {{ $slot }}
             </div>
         </div>

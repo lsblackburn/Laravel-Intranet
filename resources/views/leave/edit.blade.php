@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[--color-text] leading-tight">
+        <h2 class="font-semibold text-xl text-(--color-text) leading-tight">
             {{ __('Annual Leave') }}
         </h2>
     </x-slot>
@@ -8,10 +8,10 @@
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6">
 
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="max-w-xl">
 
-                    <h2 class="text-3xl font-medium text-[--color-text]">
+                    <h2 class="text-3xl font-medium text-(--color-text)">
                         Annual Leave Request Details
                     </h2>
 
@@ -58,10 +58,10 @@
                             <label for="is_half_day" class="inline-flex items-center">
                                 <input type="hidden" name="is_half_day" value="0">
                                 <input id="is_half_day" value="1" type="checkbox"
-                                    class="rounded bg-[--color-background] border-[--color-border] text-[--color-primary] shadow-sm focus:ring-[--color-primary]"
+                                    class="rounded bg-(--color-background) border-(--color-border) text-(--color-primary) shadow-sm focus:ring-(--color-primary)"
                                     name="is_half_day" x-model="halfDay">
                                 <span
-                                    class="ms-2 text-sm text-[--color-subtletext]">{{ __('Is this a half-day leave?') }}</span>
+                                    class="ms-2 text-sm text-(--color-subtletext)">{{ __('Is this a half-day leave?') }}</span>
                             </label>
                         </div>
 

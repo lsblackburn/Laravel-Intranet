@@ -15,7 +15,7 @@
     @endphp
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[--color-text]  leading-tight">
+        <h2 class="font-semibold text-xl text-(--color-text)  leading-tight">
             {{ __('Application Configuration') }}
         </h2>
     </x-slot>
@@ -24,7 +24,7 @@
 
         <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6">
 
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="max-w-4xl">
                     <div class="mb-6">
                         <h3 class="text-lg font-medium text-[var(--color-text)]">

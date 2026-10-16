@@ -4,15 +4,15 @@
 
     <div class="mb-4">
 
-        <h2 class="text-lg font-medium text-[--color-text]">
+        <h2 class="text-lg font-medium text-(--color-text)">
             {{ __('Enter Your 2FA Code') }}
         </h2>
 
-        <p class="mt-1 text-sm text-[--color-subtletext]">
+        <p class="mt-1 text-sm text-(--color-subtletext)">
             {{ __("Please enter the OTP generated on your Authenticator App.") }}
         </p>
 
-        <p class="mt-1 text-sm text-[--color-subtletext]">
+        <p class="mt-1 text-sm text-(--color-subtletext)">
             {{ __("Ensure you submit the current one because it refreshes every 30 seconds.") }}
         </p>
 

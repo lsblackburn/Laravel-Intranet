@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[--color-text] leading-tight">
+        <h2 class="font-semibold text-xl text-(--color-text) leading-tight">
             {{ __('User Management') }}
         </h2>
     </x-slot>
@@ -44,7 +44,7 @@
                                 class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)] flex flex-row flex-wrap justify-end gap-3">
                                 @if (auth()->user()->id !== $user->id)
                                     <a href="{{ route('admin.users.edit', $user->id) }}"
-                                        class="inline-flex items-center px-4 py-2 bg-[--color-primary] border border-transparent rounded-lg font-semibold text-xs text-[--color-background] uppercase tracking-widest hover:bg-[--color-primary-hover] focus:bg-[--color-primary-hover] active:bg-[--color-primary-hover] focus:outline-none focus:ring-2 focus:ring-[--color-primary] focus:ring-offset-2 transition ease-in-out duration-150">
+                                        class="inline-flex items-center px-4 py-2 bg-(--color-primary) border border-transparent rounded-lg font-semibold text-xs text-(--color-background) uppercase tracking-widest hover:bg-(--color-primary-hover) focus:bg-(--color-primary-hover) active:bg-(--color-primary-hover) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition ease-in-out duration-150">
                                         Edit
                                     </a>
                                     @if ($user->role !== 'admin')
@@ -53,7 +53,7 @@
                                             @method('POST')
                                             <input type="hidden" name="user_id" value="{{ $user->id }}">
                                             <button type="submit"
-                                                class="inline-flex items-center px-4 py-2 bg-[--color-primary] border border-transparent rounded-lg font-semibold text-xs text-[--color-background] uppercase tracking-widest hover:bg-[--color-primary-hover] focus:bg-[--color-primary-hover] active:bg-[--color-primary-hover] focus:outline-none focus:ring-2 focus:ring-[--color-primary] focus:ring-offset-2 transition ease-in-out duration-150">
+                                                class="inline-flex items-center px-4 py-2 bg-(--color-primary) border border-transparent rounded-lg font-semibold text-xs text-(--color-background) uppercase tracking-widest hover:bg-(--color-primary-hover) focus:bg-(--color-primary-hover) active:bg-(--color-primary-hover) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition ease-in-out duration-150">
                                                 Promote to Admin
                                             </button>
                                         </form>
@@ -63,7 +63,7 @@
                                             @method('POST')
                                             <input type="hidden" name="user_id" value="{{ $user->id }}">
                                             <button type="submit"
-                                                class="inline-flex items-center px-4 py-2 bg-[--color-primary] border border-transparent rounded-lg font-semibold text-xs text-[--color-background] uppercase tracking-widest hover:bg-[--color-primary-hover] focus:bg-[--color-primary-hover] active:bg-[--color-primary-hover] focus:outline-none focus:ring-2 focus:ring-[--color-primary] focus:ring-offset-2 transition ease-in-out duration-150">
+                                                class="inline-flex items-center px-4 py-2 bg-(--color-primary) border border-transparent rounded-lg font-semibold text-xs text-(--color-background) uppercase tracking-widest hover:bg-(--color-primary-hover) focus:bg-(--color-primary-hover) active:bg-(--color-primary-hover) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition ease-in-out duration-150">
                                                 Demote from Admin
                                             </button>
                                         </form>

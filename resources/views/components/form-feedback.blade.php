@@ -7,8 +7,8 @@
     <div x-data="{ destroy: false }" x-show="!destroy" class="max-w-7xl mx-auto pt-5 px-4 sm:px-6 lg:px-8 lg:pt-6">
         <div {{ $attributes->merge([
             'class' => ($type === 'success'
-                ? 'bg-[--color-success] text-black'
-                : 'bg-[--color-danger] text-white'
+                ? 'bg-(--color-success) text-black'
+                : 'bg-(--color-danger) text-white'
             ) . ' rounded-xl px-8 py-4 border-box flex flex-row justify-between items-center gap-4'
         ]) }}>
             {{ $message }}

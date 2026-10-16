@@ -1,10 +1,10 @@
 <section>
     <header>
-        <h2 class="text-lg font-medium text-[--color-text]">
+        <h2 class="text-lg font-medium text-(--color-text)">
             {{ __('Working Days') }}
         </h2>
 
-        <p class="mt-1 text-sm text-[--color-subtletext]">
+        <p class="mt-1 text-sm text-(--color-subtletext)">
             {{ __('Choose the days that count as working days for annual leave.') }}
         </p>
     </header>
@@ -19,23 +19,23 @@
             <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 @foreach ($workDay as $workDay)
                     <label for="work_day_{{ $workDay->id }}"
-                        class="group relative flex min-h-12 cursor-pointer items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition focus-within:ring-2 focus-within:ring-[--color-primary] focus-within:ring-offset-2">
+                        class="group relative flex min-h-12 cursor-pointer items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold transition focus-within:ring-2 focus-within:ring-(--color-primary) focus-within:ring-offset-2">
                         <input id="work_day_{{ $workDay->id }}" type="checkbox" name="work_days[]"
                             value="{{ $workDay->id }}" class="peer sr-only" @checked(in_array((string) $workDay->id, old('work_days', $selectedWorkDayIds), true))>
 
                         <span
-                            class="absolute inset-0 rounded-lg border border-[--color-border] bg-[--color-background] transition group-hover:bg-[--color-surface-alt] peer-checked:border-[--color-primary] peer-checked:bg-[--color-primary] peer-checked:shadow-sm peer-checked:group-hover:bg-[--color-primary]"
+                            class="absolute inset-0 rounded-lg border border-(--color-border) bg-(--color-background) transition group-hover:bg-(--color-surface-alt) peer-checked:border-(--color-primary) peer-checked:bg-(--color-primary) peer-checked:shadow-sm peer-checked:group-hover:bg-(--color-primary)"
                             aria-hidden="true"></span>
 
                         <span
-                            class="relative z-10 text-[--color-text] transition peer-checked:text-[--color-background]">
+                            class="relative z-10 text-(--color-text) transition peer-checked:text-(--color-background)">
                             {{ $workDay->day }}
                         </span>
                     </label>
                 @endforeach
             </div>
 
-            <p class="mt-2 text-xs text-[--color-subtletext]">
+            <p class="mt-2 text-xs text-(--color-subtletext)">
                 {{ __('Selected days are highlighted. At least one working day must be selected.') }}
             </p>
 

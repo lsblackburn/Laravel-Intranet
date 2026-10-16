@@ -1,12 +1,12 @@
-<div class="bg-[--color-card] shadow rounded-lg">
+<div class="bg-(--color-card) shadow rounded-lg">
     <div class="grid gap-8 p-4 sm:p-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
         <section aria-labelledby="add-department-heading">
             <header>
-                <h2 id="add-department-heading" class="text-lg font-medium text-[--color-text]">
+                <h2 id="add-department-heading" class="text-lg font-medium text-(--color-text)">
                     {{ __('Add new department') }}
                 </h2>
 
-                <p class="mt-1 text-sm text-[--color-subtletext]">
+                <p class="mt-1 text-sm text-(--color-subtletext)">
                     {{ __('Enter a department name and add it to the company list.') }}
                 </p>
             </header>
@@ -30,11 +30,11 @@
         <section aria-labelledby="departments-list-heading">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 id="departments-list-heading" class="text-lg font-medium text-[--color-text]">
+                    <h2 id="departments-list-heading" class="text-lg font-medium text-(--color-text)">
                         {{ __('Added departments') }}
                     </h2>
 
-                    <p class="mt-1 text-sm text-[--color-subtletext]">
+                    <p class="mt-1 text-sm text-(--color-subtletext)">
                         {{ __('Departments currently available when assigning users.') }}
                     </p>
                 </div>

@@ -1,29 +1,29 @@
 <x-app-layout>
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[--color-text]  leading-tight">
+        <h2 class="font-semibold text-xl text-(--color-text)  leading-tight">
             {{ __('Disable Two-Factor Authentication') }}
         </h2>
     </x-slot>
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="w-full">
                     <section>
-                        <h2 class="text-lg font-medium text-[--color-text]">
+                        <h2 class="text-lg font-medium text-(--color-text)">
                             {{ __('Please enter the OTP generated on your Authenticator App.') }}
                         </h2>
 
-                        <p class="mt-1 text-sm text-[--color-subtletext]">
+                        <p class="mt-1 text-sm text-(--color-subtletext)">
                             {{ __('Ensure you submit the current one because it refreshes every 30 seconds.') }}
                         </p>
 
-                        <p class="mt-1 text-sm text-[--color-subtletext]">
+                        <p class="mt-1 text-sm text-(--color-subtletext)">
                             {{ __('Are you sure you want to disable 2FA?') }}
                         </p>
 
-                        <p class="mt-1 text-sm text-[--color-subtletext]">
+                        <p class="mt-1 text-sm text-(--color-subtletext)">
                             {{ __('This will drastically reduce the security of your account.') }}
                         </p>
                     </section>
@@ -32,11 +32,11 @@
         </div>
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="max-w-xl">
                     <section>
 
-                        <h2 class="text-lg font-medium text-[--color-text]">
+                        <h2 class="text-lg font-medium text-(--color-text)">
                             {{ __('Enter OTP to disable 2FA') }}
                         </h2>
 

@@ -2,11 +2,11 @@
     <div class="grid gap-8 lg:grid-cols-[minmax(0,24rem)_minmax(0,1fr)]">
         <section aria-labelledby="add-non-work-day-heading">
             <header>
-                <h2 id="add-non-work-day-heading" class="text-lg font-medium text-[--color-text]">
+                <h2 id="add-non-work-day-heading" class="text-lg font-medium text-(--color-text)">
                     {{ __('Add non-work day') }}
                 </h2>
 
-                <p class="mt-1 text-sm text-[--color-subtletext]">
+                <p class="mt-1 text-sm text-(--color-subtletext)">
                     {{ __('Add bank holidays or company closure days that should not use leave allowance.') }}
                 </p>
             </header>
@@ -37,15 +37,15 @@
         <section aria-labelledby="non-work-days-heading">
             <header class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                    <h2 id="non-work-days-heading" class="text-lg font-medium text-[--color-text]">
+                    <h2 id="non-work-days-heading" class="text-lg font-medium text-(--color-text)">
                         {{ __('Non-work days') }}
                     </h2>
 
-                    <p class="mt-1 text-sm text-[--color-subtletext]">
+                    <p class="mt-1 text-sm text-(--color-subtletext)">
                         {{ __('These dates are excluded when leave allowance is calculated.') }}
                     </p>
 
-                    <p class="mt-1 text-sm text-[--color-subtletext]">
+                    <p class="mt-1 text-sm text-(--color-subtletext)">
                         {{ __('The below dates only show the current annual leave allowance year.') }}
                     </p>
                 </div>

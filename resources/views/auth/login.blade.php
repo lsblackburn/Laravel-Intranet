@@ -27,15 +27,15 @@
         <div class="block mt-4">
             <label for="remember_me" class="inline-flex items-center">
                 <input id="remember_me" type="checkbox"
-                    class="rounded bg-[--color-background] border-[--color-border] text-[--color-primary] shadow-sm focus:ring-[--color-primary]"
+                    class="rounded bg-(--color-background) border-(--color-border) text-(--color-primary) shadow-sm focus:ring-(--color-primary)"
                     name="remember">
-                <span class="ms-2 text-sm text-[--color-subtletext]">{{ __('Remember me') }}</span>
+                <span class="ms-2 text-sm text-(--color-subtletext)">{{ __('Remember me') }}</span>
             </label>
         </div>
 
         <div class="flex items-center justify-end mt-4">
             @if (Route::has('password.request'))
-                <a class="underline text-sm text-[--color-subtletext] hover:text-[--color-text] rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[--color-primary]"
+                <a class="underline text-sm text-(--color-subtletext) hover:text-(--color-text) rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-(--color-primary)"
                     href="{{ route('password.request') }}">
                     {{ __('Forgot your password?') }}
                 </a>

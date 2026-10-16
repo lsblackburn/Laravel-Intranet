@@ -1,21 +1,21 @@
 <x-app-layout>
 
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[--color-text]  leading-tight">
+        <h2 class="font-semibold text-xl text-(--color-text)  leading-tight">
             {{ __('Two Factor Authentication Setup') }}
         </h2>
     </x-slot>
 
     <div class="py-6">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="w-full">
                     <section>
-                        <h2 class="text-lg font-medium text-[--color-text]">
+                        <h2 class="text-lg font-medium text-(--color-text)">
                             {{ __('Step 1: Download app') }}
                         </h2>
 
-                        <p class="mt-1 text-sm text-[--color-subtletext]">
+                        <p class="mt-1 text-sm text-(--color-subtletext)">
                             {{ __('Download your preferred mobile authenticator app (e.g., Google Authenticator).') }}
                         </p>
                     </section>
@@ -24,11 +24,11 @@
         </div>
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="w-full">
                     <section>
 
-                        <h2 class="text-lg font-medium text-[--color-text]">
+                        <h2 class="text-lg font-medium text-(--color-text)">
                             {{ __('Step 2: Scan QR Code') }}
                         </h2>
 
@@ -36,21 +36,21 @@
 
                             <div>
 
-                                <p class="mt-1 text-sm text-[--color-subtletext]">
+                                <p class="mt-1 text-sm text-(--color-subtletext)">
                                     {{ __('Scan the QR code using a mobile authentication app to genrate a verification code.') }}
                                 </p>
 
-                                <p class="mt-1 text-sm text-[--color-subtletext]">
+                                <p class="mt-1 text-sm text-(--color-subtletext)">
                                     {{ __('Set up your two factor authentication by scanning the QR code.') }}
                                 </p>
 
-                                <p class="mt-1 text-sm text-[--color-subtletext]">
+                                <p class="mt-1 text-sm text-(--color-subtletext)">
                                     {{ __('Alternatively, you can use the following code within the authenticator:') }}
                                 </p>
 
-                                <p class="mt-1 text-sm font-bold text-[--color-text]">{{ $secret }}</p>
+                                <p class="mt-1 text-sm font-bold text-(--color-text)">{{ $secret }}</p>
 
-                                <p class="mt-1 text-sm text-[--color-subtletext]">
+                                <p class="mt-1 text-sm text-(--color-subtletext)">
                                     {{ __('Ensure you submit the current one because it refreshes every 30 seconds.') }}
                                 </p>
 
@@ -68,11 +68,11 @@
         </div>
 
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 mb-6">
-            <div class="p-4 sm:p-8 bg-[--color-card] shadow rounded-lg">
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="max-w-xl">
                     <section>
 
-                        <h2 class="text-lg font-medium text-[--color-text]">
+                        <h2 class="text-lg font-medium text-(--color-text)">
                             {{ __('Step 3: Enter Verification Code') }}
                         </h2>
 

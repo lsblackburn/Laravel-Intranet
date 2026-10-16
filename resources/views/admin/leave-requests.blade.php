@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <h2 class="font-semibold text-xl text-[--color-text] leading-tight">
+        <h2 class="font-semibold text-xl text-(--color-text) leading-tight">
             {{ __('Leave Requests') }}
         </h2>
     </x-slot>
@@ -87,12 +87,12 @@
                             </button>
 
                             <button type="submit" name="response" value="rejected"
-                                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-[--color-danger] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[--color-background] transition hover:bg-[--color-danger-text] focus:outline-none focus:ring-2 focus:ring-[--color-primary] focus:ring-offset-2">
+                                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-(--color-danger) px-4 py-2 text-xs font-semibold uppercase tracking-widest text-(--color-background) transition hover:bg-(--color-danger-text) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2">
                                 Decline
                             </button>
 
                             <button type="submit" name="response" value="approved"
-                                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-[--color-success] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[--color-background] transition hover:bg-[--color-success-text] focus:outline-none focus:ring-2 focus:ring-[--color-primary] focus:ring-offset-2">
+                                class="inline-flex items-center justify-center rounded-lg border border-transparent bg-(--color-success) px-4 py-2 text-xs font-semibold uppercase tracking-widest text-(--color-background) transition hover:bg-(--color-success-text) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2">
                                 Approve
                             </button>
 
@@ -184,7 +184,7 @@
                                             reason: $el.dataset.reason,
                                             additionalInfo: $el.dataset.additionalInfo,
                                         })"
-                                            class="inline-flex items-center px-4 py-2 bg-[--color-primary] border border-transparent rounded-lg font-semibold text-xs text-[--color-background] uppercase tracking-widest hover:bg-[--color-primary-hover] focus:bg-[--color-primary-hover] active:bg-[--color-primary-hover] focus:outline-none focus:ring-2 focus:ring-[--color-primary] focus:ring-offset-2 transition ease-in-out duration-150">
+                                            class="inline-flex items-center px-4 py-2 bg-(--color-primary) border border-transparent rounded-lg font-semibold text-xs text-(--color-background) uppercase tracking-widest hover:bg-(--color-primary-hover) focus:bg-(--color-primary-hover) active:bg-(--color-primary-hover) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2 transition ease-in-out duration-150">
                                             Respond
                                         </button>
 
