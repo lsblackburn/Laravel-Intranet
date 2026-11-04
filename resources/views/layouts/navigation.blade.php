@@ -234,6 +234,10 @@
             <x-responsive-nav-link :href="route('leave.form')" :active="request()->routeIs('leave.form')">
                 {{ __('Request Leave') }}
             </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.index')">
+                {{ __('Clients') }}
+            </x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->
