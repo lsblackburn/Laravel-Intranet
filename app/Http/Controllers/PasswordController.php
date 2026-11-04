@@ -76,7 +76,7 @@ class PasswordController extends Controller
         // Function to delete a password and its associated data from the database
         DB::transaction(fn () => $password->delete());
 
-        return to_route('passwords.index')->with('success', 'Password and its associated data was deleted successfully.');
+        return to_route('passwords.index')->with('success', 'Password was deleted successfully.');
     }
 
 }
