@@ -31,7 +31,7 @@
                                         <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('clients.edit', $client) }}">View/Edit</x-primary-link>
 
                                         <x-table-delete resource="clients" :record="$client" :label="$client->name">
-                                            This permanently deletes the client and all {{ $client->projects_count }} of its projects, including their media records and category and viewer links. The client's logo record and industry links are also removed.
+                                            This permanently deletes the client, and its associated credentials. History of the client and projects completed (e.g., financial reports, marketing campaigns, etc.) will remain in the system.
                                         </x-table-delete>
                                     </div>
                                 </td>
