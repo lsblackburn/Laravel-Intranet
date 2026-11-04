@@ -34,7 +34,7 @@ class PasswordController extends Controller
 
     public function create(): View
     {
-        // Function to show the form for creating a new client
+        // Function to show the form for creating a new password
         $clients = Client::orderBy('name', 'asc')->get();
 
         return view('auth.credentials.passwords.create', compact('clients'));
@@ -42,7 +42,7 @@ class PasswordController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        // Function to store a newly created client in the database
+        // Function to store a newly created password in the database
         $data = $this->validatedData($request);
 
         Password::create($data);
@@ -52,10 +52,13 @@ class PasswordController extends Controller
 
     public function edit(Password $password): View
     {
+        // Fetches all clients ordered by name to populate a dropdown in the edit form
+        $clients = Client::orderBy('name', 'asc')->get();
+
         // Function to show the form for editing an existing password
         $password = Password::findOrFail($password->id);
 
-        return view('auth.credentials.passwords.edit', compact('password'));
+        return view('auth.credentials.passwords.edit', compact('password', 'clients'));
     }
 
     public function update(Request $request, Password $password): RedirectResponse
