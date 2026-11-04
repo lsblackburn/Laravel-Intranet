@@ -86,6 +86,32 @@
                         </div>
                     </div>
 
+                    <div class="relative flex items-center group">
+                        <button
+                            class="inline-flex items-center px-1 pt-1 border-b-2 h-full group-focus-within:text-(--color-primary) text-xs md:text-sm font-medium leading-5 transition duration-150 ease-in-out
+                            {{ request()->routeIs('leave.*')
+                                ? 'border-(--color-primary) text-(--color-text)'
+                                : 'border-transparent text-(--color-subtletext) hover:text-(--color-text) hover:border-(--color-border)' }}">
+                            {{ __('Credentials') }}
+
+                            <svg class="ms-1 h-4 w-4 fill-current" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd"
+                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
+                                    clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        <div
+                            class="absolute left-0 top-full z-50 hidden w-48 rounded-lg border border-(--color-border) bg-(--color-card) p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block group-focus-within:block">
+                            <div class="py-1">
+                                <a href="{{ route('clients.index') }}"
+                                    class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
+                                    {{ __('Clients') }}
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
 
@@ -207,6 +233,10 @@
 
             <x-responsive-nav-link :href="route('leave.form')" :active="request()->routeIs('leave.form')">
                 {{ __('Request Leave') }}
+            </x-responsive-nav-link>
+
+            <x-responsive-nav-link :href="route('clients.index')" :active="request()->routeIs('clients.index')">
+                {{ __('Clients') }}
             </x-responsive-nav-link>
         </div>
 
