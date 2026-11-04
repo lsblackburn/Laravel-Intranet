@@ -14,7 +14,7 @@ class ClientController extends Controller
     private function validatedData(Request $request): array
     {
         return $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'max:255', 'unique:clients,name'],
         ]);
     }
     
