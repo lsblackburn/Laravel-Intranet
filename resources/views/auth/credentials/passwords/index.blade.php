@@ -32,10 +32,10 @@
                                 <td class="px-5 py-4 text-right">
                                     <div class="flex items-center justify-end gap-4">
 
-                                        <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', $client) }}">View/Edit</x-primary-link>
+                                        <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', $password) }}">View/Edit</x-primary-link>
 
-                                        <x-table-delete resource="passwords" :record="$client" :label="$client->name">
-                                            This permanently deletes the client and all {{ $client->projects_count }} of its projects, including their media records and category and viewer links. The client's logo record and industry links are also removed.
+                                        <x-table-delete resource="passwords" :record="$password" :label="$password->name">
+                                            This permanently deletes the password.
                                         </x-table-delete>
                                     </div>
                                 </td>

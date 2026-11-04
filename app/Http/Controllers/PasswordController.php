@@ -16,14 +16,18 @@ class PasswordController extends Controller
     {
         // Function to validate the request data for creating or updating a client
         return $request->validate([
-            'name' => ['required', 'string', 'max:255', 'unique:clients,name'],
+            'name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255'],
+            'password' => ['required'],
+            'notes' => ['nullable'],
+            'client_id' => ['required', 'exists:clients,id'],
         ]);
     }
     
     public function index(): View
     {
         // Function to display a paginated list of clients ordered by name
-        $passwords = Password::orderBy('name', 'asc')->paginate(50);
+        $passwords = Password::with('client')->orderBy('name', 'asc')->paginate(50);
 
         return view('auth.credentials.passwords.index', compact('passwords'));
     }

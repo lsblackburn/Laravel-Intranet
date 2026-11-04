@@ -9,13 +9,13 @@
 
         <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
 
-            <x-primary-link class="mb-5" href="{{ route('clients.index') }}">Back to Password List<span
+            <x-primary-link class="mb-5" href="{{ route('passwords.index') }}">Back to Password List<span
                     aria-hidden="true">&#8599;</span></x-primary-link>
 
             <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="w-full">
 
-                    <form method="post" action="{{ route('clients.store') }}" class="space-y-6">
+                    <form method="post" action="{{ route('passwords.store') }}" class="space-y-6">
                         @csrf
 
                         <div class="grid grid-cols-2 gap-5">
