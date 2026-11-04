@@ -24,12 +24,24 @@ class PasswordController extends Controller
         ]);
     }
     
-    public function index(): View
+    public function index(Request $request): View
     {
-        // Function to display a paginated list of clients ordered by name
-        $passwords = Password::with('client')->orderBy('name', 'asc')->paginate(50);
+        $search = trim($request->validate(['search' => ['nullable', 'string', 'max:255']])['search'] ?? '');
+        $passwords = Password::with('client')
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('name', 'like', '%' . $search . '%')
+                        ->orWhere('username', 'like', '%' . $search . '%')
+                        ->orWhereHas('client', fn ($client) => $client->where('name', 'like', '%' . $search . '%'));
+                });
+            })
+            ->orderBy('name', 'asc')->orderBy('id')->paginate(50)->withQueryString();
 
-        return view('auth.credentials.passwords.index', compact('passwords'));
+        if ($request->ajax()) {
+            return view('auth.credentials.passwords.partials.results', compact('passwords', 'search'));
+        }
+
+        return view('auth.credentials.passwords.index', compact('passwords', 'search'));
     }
 
     public function create(): View
