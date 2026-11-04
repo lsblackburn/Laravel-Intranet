@@ -1,0 +1,56 @@
+<x-app-layout>
+    <x-slot name="header">
+        <h1 class="text-3xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-4xl">
+            {{ __('List of passwords') }}
+        </h1>
+    </x-slot>
+
+    <main class="py-6">
+
+        <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
+
+            <x-primary-link class="mb-5" href="{{ route('passwords.create') }}">Add Password<span
+                    aria-hidden="true">&#8599;</span></x-primary-link>
+
+            <div class="overflow-x-auto rounded-xl border border-gray-200 bg-[var(--color-background2)]">
+                <table class="w-full text-left">
+                    <caption class="sr-only">passwords and their active status</caption>
+                    <thead class="border-b border-gray-200">
+                        <tr>
+                            <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Client</th>
+                            <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Name</th>
+                            <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Password</th>
+                            <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        @forelse ($passwords as $password)
+                            <tr>
+                                <td class="px-5 py-4">{{ $password->client->name }}</td>
+                                <td class="px-5 py-4">{{ $password->name }}</td>
+                                <td class="px-5 py-4">{{ $password->password }}</td>
+                                <td class="px-5 py-4 text-right">
+                                    <div class="flex items-center justify-end gap-4">
+
+                                        <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', $client) }}">View/Edit</x-primary-link>
+
+                                        <x-table-delete resource="passwords" :record="$client" :label="$client->name">
+                                            This permanently deletes the client and all {{ $client->projects_count }} of its projects, including their media records and category and viewer links. The client's logo record and industry links are also removed.
+                                        </x-table-delete>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="4" class="px-5 py-10 text-center">No passwords yet. Add your first client to get started.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <x-pagination :items="$passwords" />
+
+        </section>
+        
+    </main>
+
+</x-app-layout>

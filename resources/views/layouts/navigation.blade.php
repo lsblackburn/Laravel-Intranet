@@ -108,6 +108,11 @@
                                     class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                     {{ __('Clients') }}
                                 </a>
+
+                                <a href="{{ route('passwords.index') }}"
+                                    class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
+                                    {{ __('Password(s)') }}
+                                </a>
                             </div>
                         </div>
                     </div>

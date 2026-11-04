@@ -50,6 +50,7 @@ Route::middleware(['auth', '2fa.remember'])->group(function () {
     Route::patch('/notifications/{notification}/open', [NotificationController::class, 'open'])->name('notifications.open');
 
     Route::resource('clients', \App\Http\Controllers\ClientController::class);
+    Route::resource('passwords', \App\Http\Controllers\PasswordController::class);
 });
 
 Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
