@@ -15,8 +15,9 @@
             <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="w-full">
 
-                    <form method="post" action="{{ route('passwords.store') }}" class="space-y-6">
+                    <form method="post" action="{{ route('passwords.update', $password->id) }}" class="space-y-6">
                         @csrf
+                        @method('PUT')
 
                         <div class="grid grid-cols-2 gap-5">
 
