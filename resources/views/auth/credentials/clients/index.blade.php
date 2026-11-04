@@ -9,13 +9,16 @@
 
         <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
 
+            <x-primary-link class="mb-5" href="{{ route('clients.create') }}">Add Client<span
+                    aria-hidden="true">&#8599;</span></x-primary-link>
+
             <div class="overflow-x-auto rounded-xl border border-gray-200 bg-[var(--color-background2)]">
                 <table class="w-full text-left">
                     <caption class="sr-only">Clients and their active status</caption>
                     <thead class="border-b border-gray-200">
                         <tr>
-                            <th scope="col" class="px-5 py-4">Name</th>
-                            <th scope="col" class="px-5 py-4 text-right">Actions</th>
+                            <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Name</th>
+                            <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4 text-right">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
@@ -24,7 +27,9 @@
                                 <td class="px-5 py-4">{{ $client->name }}</td>
                                 <td class="px-5 py-4 text-right">
                                     <div class="flex items-center justify-end gap-4">
-                                        <a class="underline" href="{{ route('clients.edit', $client) }}" aria-label="Edit {{ $client->name }}">Edit</a>
+
+                                        <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('clients.edit', $client) }}">View/Edit</x-primary-link>
+
                                         <x-table-delete resource="clients" :record="$client" :label="$client->name">
                                             This permanently deletes the client and all {{ $client->projects_count }} of its projects, including their media records and category and viewer links. The client's logo record and industry links are also removed.
                                         </x-table-delete>
@@ -37,6 +42,8 @@
                     </tbody>
                 </table>
             </div>
+
+            <x-pagination :items="$clients" />
 
         </section>
         

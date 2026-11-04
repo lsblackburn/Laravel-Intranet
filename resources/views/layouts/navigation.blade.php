@@ -104,7 +104,7 @@
                         <div
                             class="absolute left-0 top-full z-50 hidden w-48 rounded-lg border border-(--color-border) bg-(--color-card) p-1.5 shadow-lg ring-1 ring-black ring-opacity-5 group-hover:block group-focus-within:block">
                             <div class="py-1">
-                                <a href="{{ route('credentials.clients.index') }}"
+                                <a href="{{ route('clients.index') }}"
                                     class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                     {{ __('Clients') }}
                                 </a>

@@ -1,7 +1,7 @@
 @props(['items'])
 
 @if ($items->lastPage() > 1)
-    <nav class="mx-auto mt-8 max-w-7xl px-3 sm:px-6 lg:px-8" role="navigation" aria-label="Pagination Navigation">
+    <nav class="mx-auto mt-8 max-w-7xl" role="navigation" aria-label="Pagination Navigation">
         <div
             class="flex flex-col items-center justify-between gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-3 text-sm shadow-sm sm:flex-row">
             <p class="text-center text-xs text-[var(--color-subtletext)] sm:text-left">
