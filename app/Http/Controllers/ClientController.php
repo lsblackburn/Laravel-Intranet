@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 use App\Models\Client;
+use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
 {
@@ -46,7 +47,7 @@ class ClientController extends Controller
     public function edit(Client $client): View
     {
         // Function to show the form for editing an existing client
-        $client = Client::findOrFail($client->id);
+        $client->load('contacts');
 
         return view('auth.credentials.clients.edit', compact('client'));
     }
@@ -54,9 +55,61 @@ class ClientController extends Controller
     public function update(Request $request, Client $client): RedirectResponse
     {
         // Function to update an existing client in the database
-        $data = $this->validatedData($request);
+        $submittedContacts = $request->input('contacts', []);
+        $retainedIds = collect(is_array($submittedContacts) ? $submittedContacts : [])
+            ->filter(fn ($contact) => is_array($contact))
+            ->pluck('id')
+            ->filter(fn ($id) => is_scalar($id) && $id !== '')
+            ->all();
+        // These contacts are deleted before replacements are saved in the transaction below.
+        $removedIds = $client->contacts()->whereNotIn('id', $retainedIds)->pluck('id')->all();
 
-        $client->update($data);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:255', Rule::unique('clients', 'name')->ignore($client)],
+            'contacts_present' => ['sometimes', 'accepted'],
+            'contacts' => ['sometimes', 'array'],
+            'contacts.*' => ['array:id,name,role,email,phone,notes'],
+            'contacts.*.id' => [
+                'nullable', 'integer', 'distinct',
+                Rule::exists('client_contacts', 'id')->where('client_id', $client->id),
+            ],
+            'contacts.*.name' => ['required', 'string', 'max:255'],
+            'contacts.*.role' => ['required', 'string', 'max:255'],
+            'contacts.*.email' => Rule::forEach(function ($value, $attribute) use ($request, $client, $removedIds) {
+                $id = $request->input(str_replace('.email', '.id', $attribute));
+                $contact = is_scalar($id) ? $client->contacts()->find($id) : null;
+
+                return [
+                    'required', 'email', 'max:255', 'distinct:ignore_case',
+                    Rule::unique('client_contacts', 'email')->ignore($contact)
+                        ->where(fn ($query) => $query->whereNotIn('id', $removedIds)),
+                ];
+            }),
+            'contacts.*.phone' => ['nullable', 'string', 'max:255'],
+            'contacts.*.notes' => ['nullable', 'string', 'max:65535'],
+        ]);
+
+        DB::transaction(function () use ($client, $data) {
+            $client->update(['name' => $data['name']]);
+
+            if (! isset($data['contacts_present']) && ! array_key_exists('contacts', $data)) {
+                return;
+            }
+
+            $contacts = collect($data['contacts'] ?? []);
+            $client->contacts()->whereNotIn('id', $contacts->pluck('id')->filter()->all())->delete();
+
+            foreach ($contacts as $contact) {
+                $id = $contact['id'] ?? null;
+                unset($contact['id']);
+
+                if ($id) {
+                    $client->contacts()->findOrFail($id)->update($contact);
+                } else {
+                    $client->contacts()->create($contact);
+                }
+            }
+        });
 
         return redirect()->route('clients.index')->with('success', 'Client updated successfully.');
     }

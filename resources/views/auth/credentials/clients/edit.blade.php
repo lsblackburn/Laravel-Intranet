@@ -26,6 +26,70 @@
                             <x-input-error :messages="$errors->get('name')" class="mt-2" />
                         </div>
 
+                        @php
+                            $contacts = array_values(old('contacts', old('contacts_present') ? [] : $client->contacts->map->only(['id', 'name', 'role', 'email', 'phone', 'notes'])->all()));
+                        @endphp
+
+                        <section class="space-y-4" x-data="{
+                            contacts: {{ Illuminate\Support\Js::from($contacts) }},
+                            errors: {{ Illuminate\Support\Js::from($errors->getMessages()) }},
+                            nextKey: {{ count($contacts) }},
+                            init() { this.contacts = this.contacts.map((contact, index) => ({ ...contact, key: index, errorIndex: index })); },
+                            addContact() {
+                                this.contacts.push({ key: this.nextKey++, id: '', name: '', role: '', email: '', phone: '', notes: '' });
+                                this.$nextTick(() => this.$refs.contactList.lastElementChild.querySelector('input[type=text]').focus());
+                            },
+                            fieldErrors(contact, field) { return this.errors['contacts.' + contact.errorIndex + '.' + field] || []; }
+                        }">
+                            <input type="hidden" name="contacts_present" value="1">
+                            <div class="flex items-center justify-between gap-4">
+                                <h2 class="text-lg font-semibold">{{ __('Client Contacts') }}</h2>
+                                <x-secondary-button @click="addContact()">
+                                    <span aria-hidden="true">+</span> {{ __('Add contact') }}
+                                </x-secondary-button>
+                            </div>
+                            <x-input-error :messages="$errors->get('contacts')" />
+                            <p x-show="contacts.length === 0" class="text-sm">{{ __('No contacts added. Use the + button to add a contact.') }}</p>
+
+                            <div class="space-y-4" x-ref="contactList">
+                                <template x-for="(contact, index) in contacts" :key="contact.key">
+                                    <fieldset class="space-y-4 rounded-lg border border-(--color-border) p-4">
+                                        <legend class="px-2 font-medium" x-text="'Contact ' + (index + 1)"></legend>
+                                        <input type="hidden" :name="'contacts[' + index + '][id]'" x-model="contact.id">
+                                        <template x-for="message in fieldErrors(contact, 'id')">
+                                            <p class="text-sm text-red-600" x-text="message"></p>
+                                        </template>
+
+                                        @foreach (['name' => 'Name', 'role' => 'Role', 'email' => 'Email', 'phone' => 'Phone'] as $field => $label)
+                                            <div>
+                                                <x-input-label ::for="'contact-' + contact.key + '-{{ $field }}'" :value="__($label)" />
+                                                <input :id="'contact-' + contact.key + '-{{ $field }}'"
+                                                    :name="'contacts[' + index + '][{{ $field }}]'"
+                                                    x-model="contact.{{ $field }}" class="block mt-1 w-full bg-(--color-card) border-(--color-border) text-(--color-text) focus:border-(--color-primary) focus:ring-(--color-primary) rounded-[7px] px-3 py-2.5 text-sm"
+                                                    type="{{ $field === 'email' ? 'email' : ($field === 'phone' ? 'tel' : 'text') }}"
+                                                    maxlength="255" @required($field !== 'phone') />
+                                                <template x-for="message in fieldErrors(contact, '{{ $field }}')">
+                                                    <p class="mt-2 text-sm text-red-600" x-text="message"></p>
+                                                </template>
+                                            </div>
+                                        @endforeach
+
+                                        <div>
+                                            <x-input-label ::for="'contact-' + contact.key + '-notes'" :value="__('Notes')" />
+                                            <textarea :id="'contact-' + contact.key + '-notes'"
+                                                :name="'contacts[' + index + '][notes]'" x-model="contact.notes"
+                                                class="block mt-1 w-full bg-(--color-card) border-(--color-border) text-(--color-text) focus:border-(--color-primary) focus:ring-(--color-primary) rounded-[7px] px-3 py-2.5 text-sm" rows="3" maxlength="65535"></textarea>
+                                            <template x-for="message in fieldErrors(contact, 'notes')">
+                                                <p class="mt-2 text-sm text-red-600" x-text="message"></p>
+                                            </template>
+                                        </div>
+                                        <x-secondary-button @click="contacts.splice(index, 1)">{{ __('Remove contact') }}</x-secondary-button>
+                                    </fieldset>
+                                </template>
+                            </div>
+                            <p class="text-sm">{{ __('Contact changes are saved when you update the client.') }}</p>
+                        </section>
+
                         <div class="flex items-center gap-4">
                             <x-primary-button>{{ __('Update Client') }}</x-primary-button>
                         </div>
