@@ -55,6 +55,15 @@ class ClientController extends Controller
     public function update(Request $request, Client $client): RedirectResponse
     {
         // Function to update an existing client in the database
+        $submittedContacts = $request->input('contacts', []);
+        $retainedIds = collect(is_array($submittedContacts) ? $submittedContacts : [])
+            ->filter(fn ($contact) => is_array($contact))
+            ->pluck('id')
+            ->filter(fn ($id) => is_scalar($id) && $id !== '')
+            ->all();
+        // These contacts are deleted before replacements are saved in the transaction below.
+        $removedIds = $client->contacts()->whereNotIn('id', $retainedIds)->pluck('id')->all();
+
         $data = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('clients', 'name')->ignore($client)],
             'contacts_present' => ['sometimes', 'accepted'],
@@ -66,11 +75,15 @@ class ClientController extends Controller
             ],
             'contacts.*.name' => ['required', 'string', 'max:255'],
             'contacts.*.role' => ['required', 'string', 'max:255'],
-            'contacts.*.email' => Rule::forEach(function ($value, $attribute) use ($request, $client) {
+            'contacts.*.email' => Rule::forEach(function ($value, $attribute) use ($request, $client, $removedIds) {
                 $id = $request->input(str_replace('.email', '.id', $attribute));
                 $contact = is_scalar($id) ? $client->contacts()->find($id) : null;
 
-                return ['required', 'email', 'max:255', 'distinct:ignore_case', Rule::unique('client_contacts', 'email')->ignore($contact)];
+                return [
+                    'required', 'email', 'max:255', 'distinct:ignore_case',
+                    Rule::unique('client_contacts', 'email')->ignore($contact)
+                        ->where(fn ($query) => $query->whereNotIn('id', $removedIds)),
+                ];
             }),
             'contacts.*.phone' => ['nullable', 'string', 'max:255'],
             'contacts.*.notes' => ['nullable', 'string', 'max:65535'],

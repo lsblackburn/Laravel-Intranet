@@ -91,6 +91,46 @@ class ClientContactsTest extends TestCase
         $this->assertDatabaseCount('client_contacts', 1);
     }
 
+    public function test_a_replacement_can_reuse_a_contact_email_removed_in_the_same_update(): void
+    {
+        $client = Client::create(['name' => 'Acme']);
+        $removed = $client->contacts()->create($this->contact());
+        $retained = $client->contacts()->create($this->contact('retained@example.com'));
+
+        $this->actingAs(User::factory()->create())->put(route('clients.update', $client), [
+            'name' => 'Acme', 'contacts_present' => '1',
+            'contacts' => [
+                array_merge($this->contact(), ['name' => 'Replacement']),
+                array_merge($this->contact('retained@example.com'), ['id' => $retained->id]),
+            ],
+        ])->assertSessionHasNoErrors()->assertRedirect(route('clients.index'));
+
+        $this->assertDatabaseMissing('client_contacts', ['id' => $removed->id]);
+        $this->assertDatabaseHas('client_contacts', [
+            'client_id' => $client->id, 'name' => 'Replacement', 'email' => $removed->email,
+        ]);
+        $this->assertDatabaseHas('client_contacts', ['id' => $retained->id, 'email' => $retained->email]);
+        $this->assertDatabaseCount('client_contacts', 2);
+    }
+
+    public function test_an_email_belonging_to_a_retained_contact_cannot_be_reused(): void
+    {
+        $client = Client::create(['name' => 'Acme']);
+        $retained = $client->contacts()->create($this->contact());
+
+        $this->actingAs(User::factory()->create())->put(route('clients.update', $client), [
+            'name' => 'Changed', 'contacts_present' => '1',
+            'contacts' => [
+                array_merge($this->contact('changed@example.com'), ['id' => $retained->id]),
+                $this->contact(),
+            ],
+        ])->assertSessionHasErrors('contacts.1.email');
+
+        $this->assertSame('Acme', $client->refresh()->name);
+        $this->assertSame('contact@example.com', $retained->refresh()->email);
+        $this->assertDatabaseCount('client_contacts', 1);
+    }
+
     public function test_deleting_a_client_cascades_to_its_contacts(): void
     {
         $client = Client::create(['name' => 'Acme']);
