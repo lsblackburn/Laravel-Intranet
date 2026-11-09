@@ -41,7 +41,9 @@ class ClientController extends Controller
 
         Client::create($data);
 
-        return redirect()->route('clients.index')->with('success', 'Client created successfully.');
+        $client = Client::where('name', $data['name'])->first();
+
+        return redirect()->route('clients.edit', $client)->with('success', 'Client created successfully.');
     }
 
     public function edit(Client $client): View
