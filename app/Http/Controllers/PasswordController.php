@@ -24,12 +24,20 @@ class PasswordController extends Controller
         ]);
     }
     
-    public function index(): View
+    public function index(Request $request): View
     {
-        // Function to display a paginated list of clients ordered by name
-        $passwords = Password::with('client')->orderBy('name', 'asc')->paginate(50);
+        $client = null;
+        $query = Password::with('client');
 
-        return view('auth.credentials.passwords.index', compact('passwords'));
+        if ($request->filled('client_id')) {
+            $request->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail($request->input('client_id'));
+            $query->where('client_id', $client->id);
+        }
+
+        $passwords = $query->orderBy('name', 'asc')->paginate(50)->withQueryString();
+
+        return view('auth.credentials.passwords.index', compact('passwords', 'client'));
     }
 
     public function create(): View
