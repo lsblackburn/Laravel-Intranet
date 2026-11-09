@@ -12,7 +12,27 @@
             <x-primary-link class="mb-5" href="{{ route('clients.index') }}">Back to Client List<span
                     aria-hidden="true">&#8599;</span></x-primary-link>
 
-            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
+            <nav>
+
+                <ul class="flex flex-row flex-wrap gap-4">
+
+                    <li>
+
+                        <a href="{{ route('clients.edit', $client) }}" class="block bg-(--color-card) px-5 py-3 border-box rounded-t-lg">Client Details</a>
+
+                    </li>
+
+                    <li>
+
+                        <a href="{{ route('passwords.index', ['client_id' => $client->id]) }}" class="block bg-(--color-card)/65 px-5 py-3 border-box rounded-t-lg transition-colors duration-200 hover:bg-(--color-card)/85">Credentials</a>
+
+                    </li>
+
+                </ul>
+
+            </nav>
+
+            <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg rounded-tl-none">
                 <div class="max-w-xl">
 
                     <form method="post" action="{{ route('clients.update', $client) }}" class="space-y-6">
