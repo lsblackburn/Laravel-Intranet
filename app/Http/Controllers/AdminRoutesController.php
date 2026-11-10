@@ -10,6 +10,7 @@ use App\Models\LeaveSetting;
 use App\Models\UserDepartment;
 use App\Models\WorkDay;
 use App\Models\NonWorkDay;
+use App\Models\ProjectType;
 use App\Services\LeaveAllowanceService;
 use Carbon\Carbon;
 
@@ -100,4 +101,11 @@ class AdminRoutesController extends Controller
 
         return view('admin.config.company-departments', compact('departments'));
     }
+
+    public function viewProjectTypes() {
+        $types = ProjectType::orderBy('name', 'asc')->paginate(30);
+
+        return view('admin.config.project-types', compact('types'));
+    }
+
 }
