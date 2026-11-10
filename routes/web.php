@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\UserDepartmentController;
+use App\Http\Controllers\ProjectTypeController;
 use App\Http\Controllers\NonWorkDayController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ClientController;
@@ -79,8 +80,9 @@ Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
     Route::delete('/admin/app-configuration/company-departments/delete/{department}', [UserDepartmentController::class, 'deleteCompanyDepartment'])->name('admin.company-departments.delete');
 
     Route::get('/admin/app-configuration/project-types', [AdminRoutesController::class, 'viewProjectTypes'])->name('admin.view-project-types');
-    Route::post('/admin/app-configuration/project-types/create', [UserDepartmentController::class, 'createProjectTypes'])->name('admin.project-types.create');
-    Route::delete('/admin/app-configuration/project-types/delete/{department}', [UserDepartmentController::class, 'deleteProjectTypes'])->name('admin.project-types.delete');
+    Route::post('/admin/app-configuration/project-types/create', [ProjectTypeController::class, 'createProjectTypes'])->name('admin.project-types.create');
+    Route::patch('/admin/app-configuration/project-types/update/{type}', [ProjectTypeController::class, 'updateProjectType'])->name('admin.project-types.update');
+    Route::delete('/admin/app-configuration/project-types/delete/{type}', [ProjectTypeController::class, 'deleteProjectTypes'])->name('admin.project-types.delete');
 });
 
 require __DIR__.'/auth.php';
