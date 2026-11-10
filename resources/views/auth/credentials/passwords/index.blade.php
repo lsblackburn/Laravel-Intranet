@@ -69,7 +69,11 @@
                                     <td class="px-5 py-4 text-right">
                                         <div class="flex items-center justify-end gap-4">
 
-                                            <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', $password) }}">View/Edit</x-primary-link>
+                                            @if ($client)
+                                                <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', ['password' => $password, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
+                                            @else
+                                                <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', $password) }}">View/Edit</x-primary-link>
+                                            @endif
 
                                             <x-table-delete resource="passwords" :record="$password" :label="$password->name">
                                                 This permanently deletes the password.

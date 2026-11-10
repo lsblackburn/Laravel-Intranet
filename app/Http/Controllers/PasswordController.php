@@ -60,13 +60,21 @@ class PasswordController extends Controller
 
     public function edit(Password $password): View
     {
+
+        $client = null;
+
+        if (request()->filled('client_id')) {
+            request()->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail(request()->input('client_id'));
+        }
+
         // Fetches all clients ordered by name to populate a dropdown in the edit form
         $clients = Client::orderBy('name', 'asc')->get();
 
         // Function to show the form for editing an existing password
         $password = Password::findOrFail($password->id);
 
-        return view('auth.credentials.passwords.edit', compact('password', 'clients'));
+        return view('auth.credentials.passwords.edit', compact('password', 'clients', 'client'));
     }
 
     public function update(Request $request, Password $password): RedirectResponse
