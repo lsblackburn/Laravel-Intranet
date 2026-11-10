@@ -10,6 +10,7 @@ use App\Models\LeaveSetting;
 use App\Models\UserDepartment;
 use App\Models\WorkDay;
 use App\Models\NonWorkDay;
+use App\Models\ProjectType;
 use App\Services\LeaveAllowanceService;
 use Carbon\Carbon;
 
@@ -100,4 +101,9 @@ class AdminRoutesController extends Controller
 
         return view('admin.config.company-departments', compact('departments'));
     }
+
+    public function viewProjectTypes() {
+        
+    }
+
 }
