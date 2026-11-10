@@ -140,7 +140,7 @@
                                         class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)] flex flex-row flex-wrap justify-end gap-3">
 
                                         @if ($request->status == 'pending')
-                                            <x-primary-link
+                                            <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white"
                                                 href="{{ route('leave.edit', ['request' => $request->id]) }}">
                                                 Modify
                                             </x-primary-link>
@@ -151,7 +151,7 @@
                                                 @csrf
                                                 @method('DELETE')
 
-                                                <x-primary-button>
+                                                <x-primary-button class="'inline-flex min-h-[42px] items-center justify-center gap-4 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 px-[18px] py-2.5 bg-red-600 border border-transparent rounded-lg font-medium text-sm text-white normal-case tracking-normal hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
                                                     Cancel
                                                 </x-primary-button>
                                             </form>
