@@ -103,7 +103,9 @@ class AdminRoutesController extends Controller
     }
 
     public function viewProjectTypes() {
-        
+        $types = ProjectType::orderBy('name', 'asc')->paginate(30);
+
+        return view('admin.config.project-types', compact('types'));
     }
 
 }
