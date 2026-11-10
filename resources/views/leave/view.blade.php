@@ -5,10 +5,6 @@
         </h1>
     </x-slot>
 
-    <x-dialog-box>
-        Are you sure you want to cancel this leave request?
-    </x-dialog-box>
-
     <x-leave-allowance-block />
 
     <div x-data="{
@@ -66,10 +62,7 @@
                     </div>
 
                     <div class="mt-6 flex justify-end">
-                        <button type="button" x-on:click="open = false"
-                            class="inline-flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[var(--color-text)] shadow-sm transition hover:bg-[var(--color-surface-alt)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
-                            Close
-                        </button>
+                        <x-secondary-button x-on:click="open = false">Close</x-secondary-button>
                     </div>
                 </div>
             </div>
@@ -140,21 +133,20 @@
                                         class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)] flex flex-row flex-wrap justify-end gap-3">
 
                                         @if ($request->status == 'pending')
-                                            <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white"
+                                            <x-primary-link
                                                 href="{{ route('leave.edit', ['request' => $request->id]) }}">
                                                 Modify
                                             </x-primary-link>
 
-                                            <form x-data action="{{ route('leave.delete', $request->id) }}"
-                                                method="POST"
-                                                x-on:submit.prevent="$dispatch('confirm-cancel-leave', { form: $event.target })">
-                                                @csrf
-                                                @method('DELETE')
-
-                                                <x-primary-button class="'inline-flex min-h-[42px] items-center justify-center gap-4 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50 px-[18px] py-2.5 bg-red-600 border border-transparent rounded-lg font-medium text-sm text-white normal-case tracking-normal hover:bg-red-500 active:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition ease-in-out duration-150">
-                                                    Cancel
-                                                </x-primary-button>
-                                            </form>
+                                            <x-danger-button type="button"
+                                                x-on:click="$dispatch('open-modal', 'cancel-leave-{{ $request->id }}')">
+                                                Cancel
+                                            </x-danger-button>
+                                            <x-confirm-dialog name="cancel-leave-{{ $request->id }}"
+                                                :title="__('Cancel leave request?')"
+                                                :description="__('Are you sure you want to cancel this leave request?')"
+                                                :action="route('leave.delete', $request->id)"
+                                                :confirm-text="__('Cancel request')" :cancel-text="__('Keep request')" />
                                         @else
                                             @if (!empty($request->manager_comment))
                                                 <button type="button"

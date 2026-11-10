@@ -24,7 +24,7 @@
                         @csrf
                         @method('PUT')
 
-                        <div class="grid grid-cols-2 gap-5">
+                        <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 
                             <div class="space-y-6">
 

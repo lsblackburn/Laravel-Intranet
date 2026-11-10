@@ -30,7 +30,7 @@
 
                         @if ($clients->isEmpty())
                             <tr>
-                                <td colspan="4" class="px-6 py-4 text-center text-sm text-[var(--color-subtletext)]">
+                                <td colspan="2" class="px-6 py-4 text-center text-sm text-[var(--color-subtletext)]">
                                     No clients yet. Add your first client to get started.
                                 </td>
                             </tr>
@@ -44,11 +44,11 @@
 
                                     <!-- Actions -->
                                     <td
-                                        class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)] flex flex-row flex-wrap justify-end gap-3">
+                                        class="px-6 py-4 text-right text-sm text-[var(--color-subtletext)]">
 
-                                        <div class="flex items-center justify-end gap-4">
+                                        <div class="flex flex-wrap items-center justify-end gap-3">
 
-                                            <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('clients.edit', $client) }}">View/Edit</x-primary-link>
+                                            <x-primary-link href="{{ route('clients.edit', $client) }}">View/Edit</x-primary-link>
 
                                             <x-table-delete resource="clients" :record="$client" :label="$client->name">
                                                 This permanently deletes the client, and its associated credentials. History of the client and projects completed (e.g., financial reports, marketing campaigns, etc.) will remain in the system.
@@ -62,7 +62,7 @@
                         @endif
 
                         <tr class="hover:bg-[var(--color-surface-alt)] transition">
-                            <td colspan="5" class="text-center text-sm text-[var(--color-subtletext)]">
+                            <td colspan="2" class="text-center text-sm text-[var(--color-subtletext)]">
                                 <a href="{{ route('clients.create') }}"
                                     class="inline-flex items-center justify-center cursor-pointer w-full gap-2 px-6 py-4">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
@@ -81,16 +81,6 @@
                     </tbody>
                 </table>
             </div>
-
-
-
-
-
-
-
-
-
-
 
             <x-pagination :items="$clients" />
 
