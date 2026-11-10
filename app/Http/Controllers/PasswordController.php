@@ -12,7 +12,7 @@ use App\Models\Client;
 class PasswordController extends Controller
 {
     
-     private function validatedData(Request $request): array
+    private function validatedData(Request $request): array
     {
         // Function to validate the request data for creating or updating a client
         return $request->validate([
@@ -24,20 +24,35 @@ class PasswordController extends Controller
         ]);
     }
     
-    public function index(): View
+    public function index(Request $request): View
     {
-        // Function to display a paginated list of clients ordered by name
-        $passwords = Password::with('client')->orderBy('name', 'asc')->paginate(50);
+        $client = null;
+        $query = Password::with('client');
 
-        return view('auth.credentials.passwords.index', compact('passwords'));
+        if ($request->filled('client_id')) {
+            $request->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail($request->input('client_id'));
+            $query->where('client_id', $client->id);
+        }
+
+        $passwords = $query->orderBy('name', 'asc')->paginate(50)->withQueryString();
+
+        return view('auth.credentials.passwords.index', compact('passwords', 'client'));
     }
 
     public function create(): View
     {
+        $client = null;
+
+        if (request()->filled('client_id')) {
+            request()->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail(request()->input('client_id'));
+        }
+
         // Function to show the form for creating a new password
         $clients = Client::orderBy('name', 'asc')->get();
 
-        return view('auth.credentials.passwords.create', compact('clients'));
+        return view('auth.credentials.passwords.create', compact('clients', 'client'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -52,13 +67,21 @@ class PasswordController extends Controller
 
     public function edit(Password $password): View
     {
+
+        $client = null;
+
+        if (request()->filled('client_id')) {
+            request()->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail(request()->input('client_id'));
+        }
+
         // Fetches all clients ordered by name to populate a dropdown in the edit form
         $clients = Client::orderBy('name', 'asc')->get();
 
         // Function to show the form for editing an existing password
         $password = Password::findOrFail($password->id);
 
-        return view('auth.credentials.passwords.edit', compact('password', 'clients'));
+        return view('auth.credentials.passwords.edit', compact('password', 'clients', 'client'));
     }
 
     public function update(Request $request, Password $password): RedirectResponse

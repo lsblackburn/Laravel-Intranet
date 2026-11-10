@@ -9,8 +9,13 @@
 
         <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
 
-            <x-primary-link class="mb-5" href="{{ route('passwords.index') }}">Back to Password List<span
+            @if ($client)
+                <x-primary-link class="mb-5" href="{{ route('passwords.index', ['client_id' => $client->id]) }}">Back to Password List<span
                     aria-hidden="true">&#8599;</span></x-primary-link>
+            @else
+                <x-primary-link class="mb-5" href="{{ route('passwords.index') }}">Back to Password List<span
+                    aria-hidden="true">&#8599;</span></x-primary-link>
+            @endif
 
             <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg">
                 <div class="w-full">
