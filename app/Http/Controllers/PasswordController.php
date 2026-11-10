@@ -12,7 +12,7 @@ use App\Models\Client;
 class PasswordController extends Controller
 {
     
-     private function validatedData(Request $request): array
+    private function validatedData(Request $request): array
     {
         // Function to validate the request data for creating or updating a client
         return $request->validate([
@@ -42,10 +42,17 @@ class PasswordController extends Controller
 
     public function create(): View
     {
+        $client = null;
+
+        if (request()->filled('client_id')) {
+            request()->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail(request()->input('client_id'));
+        }
+
         // Function to show the form for creating a new password
         $clients = Client::orderBy('name', 'asc')->get();
 
-        return view('auth.credentials.passwords.create', compact('clients'));
+        return view('auth.credentials.passwords.create', compact('clients', 'client'));
     }
 
     public function store(Request $request): RedirectResponse
