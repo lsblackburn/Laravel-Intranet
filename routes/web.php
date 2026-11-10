@@ -77,6 +77,10 @@ Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
     Route::get('/admin/app-configuration/company-departments', [AdminRoutesController::class, 'viewCompanyDepartments'])->name('admin.view-company-departments');
     Route::post('/admin/app-configuration/company-departments/create', [UserDepartmentController::class, 'createCompanyDepartments'])->name('admin.company-departments.create');
     Route::delete('/admin/app-configuration/company-departments/delete/{department}', [UserDepartmentController::class, 'deleteCompanyDepartment'])->name('admin.company-departments.delete');
+
+    Route::get('/admin/app-configuration/project-types', [AdminRoutesController::class, 'viewProjectTypes'])->name('admin.view-project-types');
+    Route::post('/admin/app-configuration/project-types/create', [UserDepartmentController::class, 'createProjectTypes'])->name('admin.project-types.create');
+    Route::delete('/admin/app-configuration/project-types/delete/{department}', [UserDepartmentController::class, 'deleteProjectTypes'])->name('admin.project-types.delete');
 });
 
 require __DIR__.'/auth.php';
