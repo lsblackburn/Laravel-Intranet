@@ -49,32 +49,32 @@
                 <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg rounded-tl-none">
             @endif
 
-                <div class="overflow-x-auto rounded-xl border border-gray-200 bg-[var(--color-background2)]">
-                    <table class="w-full text-left">
-                        <caption class="sr-only">passwords and their active status</caption>
-                        <thead class="border-b border-gray-200">
+                <div class="overflow-x-auto rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] shadow-sm">
+                    <table class="min-w-full text-sm text-left">
+                        <caption class="sr-only">Passwords and their clients</caption>
+                        <thead class="bg-[var(--color-surface-alt)] text-xs uppercase tracking-wider text-[var(--color-subtletext)]">
                             <tr>
-                                <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Client</th>
-                                <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Name</th>
-                                <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Username</th>
-                                <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Password</th>
-                                <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4 text-right">Actions</th>
+                                <th scope="col" class="px-6 py-4 font-medium">Client</th>
+                                <th scope="col" class="px-6 py-4 font-medium">Name</th>
+                                <th scope="col" class="px-6 py-4 font-medium">Username</th>
+                                <th scope="col" class="px-6 py-4 font-medium">Password</th>
+                                <th scope="col" class="px-6 py-4 font-medium text-right">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
+                        <tbody class="divide-y divide-[var(--color-border)] text-[var(--color-text)]">
                             @forelse ($passwords as $password)
-                                <tr>
-                                    <td class="px-5 py-4">{{ $password->client->name }}</td>
-                                    <td class="px-5 py-4">{{ $password->name }}</td>
-                                    <td class="px-5 py-4">{{ $password->username }}</td>
-                                    <td class="px-5 py-4">{{ $password->password }}</td>
-                                    <td class="px-5 py-4 text-right">
-                                        <div class="flex items-center justify-end gap-4">
+                                <tr class="hover:bg-[var(--color-surface-alt)] transition">
+                                    <td class="px-6 py-4">{{ $password->client->name }}</td>
+                                    <td class="px-6 py-4">{{ $password->name }}</td>
+                                    <td class="px-6 py-4">{{ $password->username }}</td>
+                                    <td class="px-6 py-4">{{ $password->password }}</td>
+                                    <td class="px-6 py-4 text-right">
+                                        <div class="flex flex-wrap items-center justify-end gap-3">
 
                                             @if ($client)
-                                                <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', ['password' => $password, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
+                                                <x-primary-link href="{{ route('passwords.edit', ['password' => $password, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
                                             @else
-                                                <x-primary-link class="bg-blue-500 hover:bg-blue-600 text-white" href="{{ route('passwords.edit', $password) }}">View/Edit</x-primary-link>
+                                                <x-primary-link href="{{ route('passwords.edit', $password) }}">View/Edit</x-primary-link>
                                             @endif
 
                                             <x-table-delete resource="passwords" :record="$password" :label="$password->name">
@@ -84,7 +84,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="px-5 py-10 text-center">No passwords yet. Add your first client to get started.</td></tr>
+                                <tr><td colspan="5" class="px-6 py-10 text-center text-sm text-[var(--color-subtletext)]">No passwords yet. Add your first password to get started.</td></tr>
                             @endforelse
                         </tbody>
                     </table>

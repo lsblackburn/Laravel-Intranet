@@ -81,10 +81,7 @@
 
                         <div class="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
 
-                            <button type="button" x-on:click="open = false"
-                                class="inline-flex items-center justify-center rounded-lg border border-[var(--color-border)] bg-[var(--color-card)] px-4 py-2 text-xs font-semibold uppercase tracking-widest text-[var(--color-text)] shadow-sm transition hover:bg-[var(--color-surface-alt)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)] focus:ring-offset-2">
-                                Close
-                            </button>
+                            <x-secondary-button x-on:click="open = false">Close</x-secondary-button>
 
                             <button type="submit" name="response" value="rejected"
                                 class="inline-flex items-center justify-center rounded-lg border border-transparent bg-(--color-danger) px-4 py-2 text-xs font-semibold uppercase tracking-widest text-(--color-background) transition hover:bg-(--color-danger-text) focus:outline-none focus:ring-2 focus:ring-(--color-primary) focus:ring-offset-2">
