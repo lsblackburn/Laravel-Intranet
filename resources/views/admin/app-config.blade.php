@@ -11,6 +11,11 @@
                 'description' => 'Manage company departments which can be assigned to users',
                 'href' => route('admin.view-company-departments'),
             ],
+            [
+                'label' => 'Project types',
+                'description' => 'Manage project types which can be assigned to client jobs',
+                'href' => route('admin.view-project-types'),
+            ],
         ];
     @endphp
 
