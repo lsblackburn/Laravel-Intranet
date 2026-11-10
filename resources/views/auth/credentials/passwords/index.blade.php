@@ -56,6 +56,7 @@
                             <tr>
                                 <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Client</th>
                                 <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Name</th>
+                                <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Username</th>
                                 <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4">Password</th>
                                 <th scope="col" class="bg-[var(--color-primary)] text-(--color-background) px-5 py-4 text-right">Actions</th>
                             </tr>
@@ -65,6 +66,7 @@
                                 <tr>
                                     <td class="px-5 py-4">{{ $password->client->name }}</td>
                                     <td class="px-5 py-4">{{ $password->name }}</td>
+                                    <td class="px-5 py-4">{{ $password->username }}</td>
                                     <td class="px-5 py-4">{{ $password->password }}</td>
                                     <td class="px-5 py-4 text-right">
                                         <div class="flex items-center justify-end gap-4">
