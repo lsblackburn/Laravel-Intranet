@@ -29,28 +29,35 @@
                             <div class="space-y-6">
 
                                 <div>
-                                    <x-input-label for="name" :value="__('Password Name')" />
+                                    <x-input-label for="name" :value="__('Password Name*')" />
                                     <x-text-input id="name" class="block mt-1 w-full" type="text" required name="name"
                                         :value="old('name', $password->name )" />
                                     <x-input-error :messages="$errors->get('name')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <x-input-label for="username" :value="__('Username')" />
+                                    <x-input-label for="url" :value="__('Url')" />
+                                    <x-text-input id="url" class="block mt-1 w-full" type="text" name="url"
+                                        :value="old('url', $password->url )" />
+                                    <x-input-error :messages="$errors->get('url')" class="mt-2" />
+                                </div>
+
+                                <div>
+                                    <x-input-label for="username" :value="__('Username*')" />
                                     <x-text-input id="username" class="block mt-1 w-full" type="text" required name="username"
                                         :value="old('username', $password->username )" />
                                     <x-input-error :messages="$errors->get('username')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <x-input-label for="password" :value="__('Password')" />
+                                    <x-input-label for="password" :value="__('Password*')" />
                                     <x-text-input id="password" class="block mt-1 w-full" type="text" required name="password"
                                         :value="old('password', $password->password )" />
                                     <x-input-error :messages="$errors->get('password')" class="mt-2" />
                                 </div>
 
                                 <div>
-                                    <x-input-label for="client_id" :value="__('Client')" />
+                                    <x-input-label for="client_id" :value="__('Client*')" />
                                     <x-select-dropdown id="client_id" name="client_id" class="block mt-1 w-full"
                                         :options="$clients" :value="old('client_id', $password->client_id)" :placeholder="__('Select a client')" />
                                     <x-input-error :messages="$errors->get('client_id')" class="mt-2" />

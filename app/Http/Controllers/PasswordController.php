@@ -17,6 +17,7 @@ class PasswordController extends Controller
         // Function to validate the request data for creating or updating a client
         return $request->validate([
             'name' => ['required', 'string', 'max:255'],
+            'url' => ['nullable'],
             'username' => ['required', 'string', 'max:255'],
             'password' => ['required'],
             'notes' => ['nullable'],
