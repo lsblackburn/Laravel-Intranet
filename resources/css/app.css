@@ -6,6 +6,11 @@
 [x-cloak] { display: none !important; }
 
 :root {
+
+    input[type="checkbox"]:checked {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='black' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5.5 5.5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 011.414-1.414L6 9.586l4.793-4.793a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+    }
+
     --color-background: #f5f3ef;
     --color-card: #fffefa;
     --color-surface-alt: #eeebe6;
@@ -31,6 +36,11 @@
 }
 
 [data-theme="dark"] {
+
+    input[type="checkbox"]:checked {
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 010 1.414l-5.5 5.5a1 1 0 01-1.414 0l-2.5-2.5a1 1 0 011.414-1.414L6 9.586l4.793-4.793a1 1 0 011.414 0z'/%3E%3C/svg%3E");
+    }
+
     --color-background: #19171c;
     --color-card: #242127;
     --color-surface-alt: #302b33;
