@@ -28,6 +28,12 @@
 
                     </li>
 
+                    <li>
+
+                        <a href="{{ route('jobs.index', ['client_id' => $client->id]) }}" class="block bg-(--color-card)/65 px-5 py-3 border-box rounded-t-lg transition-colors duration-200 hover:bg-(--color-card)/85">Jobs</a>
+
+                    </li>
+
                 </ul>
 
             </nav>

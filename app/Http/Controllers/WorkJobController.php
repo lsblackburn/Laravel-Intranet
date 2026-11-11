@@ -66,4 +66,23 @@ class WorkJobController extends Controller
         return redirect()->route('jobs.index', ['client_id' => $job->client_id])->with('success', 'Job created successfully.');
     }
 
+    public function edit(WorkJob $job): View
+    {
+
+        $client = null;
+
+        if (request()->filled('client_id')) {
+            request()->validate(['client_id' => ['integer']]);
+            $client = Client::findOrFail(request()->input('client_id'));
+        }
+
+        $clients = Client::orderBy('name', 'asc')->get();
+
+        $projectTypes = ProjectType::orderBy('name', 'asc')->pluck('name', 'name');
+
+        $job = WorkJob::findOrFail($job->id);
+
+        return view('admin.jobs.edit', compact('job', 'projectTypes', 'clients', 'client'));
+    }
+
 }

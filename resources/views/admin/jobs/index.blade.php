@@ -31,7 +31,13 @@
 
                         <li>
 
-                            <a href="{{ route('passwords.index', ['client_id' => $client->id]) }}" class="block bg-(--color-card) px-5 py-3 border-box rounded-t-lg">Credentials</a>
+                            <a href="{{ route('passwords.index', ['client_id' => $client->id]) }}" class="block bg-(--color-card)/65 px-5 py-3 border-box rounded-t-lg transition-colors duration-200 hover:bg-(--color-card)/85">Credentials</a>
+
+                        </li>
+
+                        <li>
+
+                            <a href="{{ route('jobs.index', ['client_id' => $client->id]) }}" class="block bg-(--color-card) px-5 py-3 border-box rounded-t-lg">Jobs</a>
 
                         </li>
 
@@ -66,7 +72,7 @@
                                         <div class="flex flex-wrap items-center justify-end gap-3">
 
                                             @if ($client)
-                                                <x-primary-link href="{{ route('jobs.edit', ['password' => $job, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
+                                                <x-primary-link href="{{ route('jobs.edit', ['job' => $job, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
                                             @else
                                                 <x-primary-link href="{{ route('jobs.edit', $job) }}">View/Edit</x-primary-link>
                                             @endif
