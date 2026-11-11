@@ -25,13 +25,13 @@ class ClientController extends Controller
         // Function to display a paginated list of clients ordered by name
         $clients = Client::orderBy('name', 'asc')->paginate(50);
 
-        return view('auth.credentials.clients.index', compact('clients'));
+        return view('credentials.clients.index', compact('clients'));
     }
 
     public function create(): View
     {
         // Function to show the form for creating a new client
-        return view('auth.credentials.clients.create');
+        return view('credentials.clients.create');
     }
 
     public function store(Request $request): RedirectResponse
@@ -51,7 +51,7 @@ class ClientController extends Controller
         // Function to show the form for editing an existing client
         $client->load('contacts');
 
-        return view('auth.credentials.clients.edit', compact('client'));
+        return view('credentials.clients.edit', compact('client'));
     }
 
     public function update(Request $request, Client $client): RedirectResponse
