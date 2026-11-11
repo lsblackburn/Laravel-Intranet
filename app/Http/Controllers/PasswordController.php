@@ -38,7 +38,7 @@ class PasswordController extends Controller
 
         $passwords = $query->orderBy('name', 'asc')->paginate(50)->withQueryString();
 
-        return view('auth.credentials.passwords.index', compact('passwords', 'client'));
+        return view('credentials.passwords.index', compact('passwords', 'client'));
     }
 
     public function create(): View
@@ -53,7 +53,7 @@ class PasswordController extends Controller
         // Function to show the form for creating a new password
         $clients = Client::orderBy('name', 'asc')->get();
 
-        return view('auth.credentials.passwords.create', compact('clients', 'client'));
+        return view('credentials.passwords.create', compact('clients', 'client'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -82,7 +82,7 @@ class PasswordController extends Controller
         // Function to show the form for editing an existing password
         $password = Password::findOrFail($password->id);
 
-        return view('auth.credentials.passwords.edit', compact('password', 'clients', 'client'));
+        return view('credentials.passwords.edit', compact('password', 'clients', 'client'));
     }
 
     public function update(Request $request, Password $password): RedirectResponse
