@@ -10,10 +10,10 @@
         <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
 
             @if ($client)
-                <x-primary-link class="mb-5" href="{{ route('passwords.create', ['client_id' => $client->id]) }}">Add Job<span
+                <x-primary-link class="mb-5" href="{{ route('jobs.create', ['client_id' => $client->id]) }}">Add Job<span
                     aria-hidden="true">&#8599;</span></x-primary-link>
             @else
-                <x-primary-link class="mb-5" href="{{ route('passwords.create') }}">Add Job<span
+                <x-primary-link class="mb-5" href="{{ route('jobs.create') }}">Add Job<span
                     aria-hidden="true">&#8599;</span></x-primary-link>
             @endif
 
@@ -66,12 +66,12 @@
                                         <div class="flex flex-wrap items-center justify-end gap-3">
 
                                             @if ($client)
-                                                <x-primary-link href="{{ route('passwords.edit', ['password' => $job, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
+                                                <x-primary-link href="{{ route('jobs.edit', ['password' => $job, 'client_id' => $client->id]) }}">View/Edit</x-primary-link>
                                             @else
-                                                <x-primary-link href="{{ route('passwords.edit', $job) }}">View/Edit</x-primary-link>
+                                                <x-primary-link href="{{ route('jobs.edit', $job) }}">View/Edit</x-primary-link>
                                             @endif
 
-                                            <x-table-delete resource="passwords" :record="$job" :label="$job->name">
+                                            <x-table-delete resource="jobs" :record="$job" :label="$job->name">
                                                 This permanently deletes the password.
                                             </x-table-delete>
                                         </div>
