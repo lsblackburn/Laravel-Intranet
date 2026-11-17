@@ -6,8 +6,11 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use App\Models\WorkJob;
+use App\Models\Invoice;
 use App\Models\Client;
 use App\Models\ProjectType;
+use App\Services\JobInvoices;
+use Illuminate\Support\Facades\DB;
 
 class WorkJobController extends Controller
 {
@@ -85,5 +88,41 @@ class WorkJobController extends Controller
 
         return view('admin.jobs.edit', compact('job', 'projectTypes', 'clients', 'client'));
     }
+
+    public function invoiceForm(WorkJob $job, int $year): View
+    {
+        $client = $job->client;
+        abort_unless($year >= 1901 && $year <= 2155, 404);
+        $months = JobInvoices::MONTHS;
+        $invoices = DB::transaction(function () use ($job, $year) {
+            $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+
+            return app(JobInvoices::class)->ensureYear($job, $year);
+        });
+
+        $followingFrequencies = app(JobInvoices::class)->frequenciesFor($job, $invoices);
+
+        return view('admin.jobs.invoice', compact('job', 'year', 'client', 'months', 'invoices', 'followingFrequencies'));
+    }
+
+    public function invoiceUpdate(Request $request, WorkJob $job, int $year): RedirectResponse
+    {
+        abort_unless($year >= 1901 && $year <= 2155, 404);
+        $rules = ['amounts' => ['required', 'array'], 'frequencies' => ['sometimes', 'array']];
+        foreach (JobInvoices::MONTHS as $month) {
+            $rules['amounts.'.$month] = ['required', 'numeric', 'decimal:0,2', 'between:-9999999999.99,9999999999.99'];
+            $rules['frequencies.'.$month] = ['nullable', 'in:yearly,monthly'];
+        }
+        $data = $request->validate($rules);
+
+        DB::transaction(function () use ($job, $year, $data) {
+            $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+            app(JobInvoices::class)->update($job, $year, $data);
+        });
+
+        return redirect()->route('invoice.form', ['job' => $job, 'year' => $year])
+            ->with('success', 'Invoices updated successfully.');
+    }
+
 
 }

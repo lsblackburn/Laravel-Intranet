@@ -31,7 +31,7 @@
 
                     <li>
 
-                        <a href=""
+                        <a href="{{ route('invoice.form', ['job' => $job, 'year' => now()->year]) }}"
                             class="block bg-(--color-card)/65 px-5 py-3 border-box rounded-t-lg transition-colors duration-200 hover:bg-(--color-card)/85">Invoice
                             Amounts</a>
 

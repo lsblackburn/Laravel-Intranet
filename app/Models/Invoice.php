@@ -17,13 +17,18 @@ class Invoice extends Model
         'work_job_id',
         'client_id',
         'year',
-        'month'
+        'month',
+        'frequency',
+        'recurring',
+        'stops_recurrence',
     ];
 
     protected function casts(): array
     {
         return [
             'amount' => 'decimal:2',
+            'recurring' => 'boolean',
+            'stops_recurrence' => 'boolean',
         ];
     }
 
