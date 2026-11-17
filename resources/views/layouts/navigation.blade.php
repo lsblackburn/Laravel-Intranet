@@ -87,11 +87,6 @@
                                     class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
                                     {{ __('Request Leave') }}
                                 </a>
-
-                                <a href="{{ route('jobs.index') }}"
-                                    class="block rounded-md px-4 py-2 text-xs md:text-sm text-(--color-text) hover:bg-(--color-surface-alt)">
-                                    {{ __('Jobs') }}
-                                </a>
                             </div>
                         </div>
                     </div>
