@@ -44,8 +44,9 @@
             <div class="p-4 sm:p-8 bg-(--color-card) shadow rounded-lg rounded-tl-none">
                 <div class="w-full">
 
-                    <form method="post" action="{{ route('jobs.store') }}" class="space-y-6">
+                    <form method="post" action="{{ route('jobs.update', $job->id) }}" class="space-y-6">
                         @csrf
+                        @method('PUT')
 
                         <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
 

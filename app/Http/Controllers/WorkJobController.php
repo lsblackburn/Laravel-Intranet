@@ -89,6 +89,17 @@ class WorkJobController extends Controller
         return view('admin.jobs.edit', compact('job', 'projectTypes', 'clients', 'client'));
     }
 
+    public function update(Request $request, WorkJob $job): RedirectResponse
+    {
+        $data = $this->validatedData($request);
+
+        $job->update($data);
+
+        $job = WorkJob::where('title', $data['title'])->first();
+
+        return redirect()->route('jobs.edit', $job)->with('success', 'Job updated successfully.');
+    }
+
     public function invoiceForm(WorkJob $job, int $year): View
     {
         $client = $job->client;
