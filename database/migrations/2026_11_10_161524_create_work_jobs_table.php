@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('title')->required();
             $table->string('project_type')->required();
             $table->text('notes')->nullable()->default(null);
-            $table->unsignedBigInteger('client_id');
-            $table->foreign('client_id')->references('id')->on('clients');
+            $table->foreignId('client_id')->constrained('clients');
             $table->boolean('active')->default(1);
             $table->boolean('completed')->default(0);
             $table->timestamps();
