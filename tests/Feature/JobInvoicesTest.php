@@ -27,6 +27,35 @@ class JobInvoicesTest extends TestCase
         return WorkJob::create(['title' => 'Job', 'project_type' => 'Website', 'client_id' => $client->id]);
     }
 
+    public function test_table_shows_current_year_and_inherited_amounts_without_creating_records(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2027-11-18 12:00:00'));
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'March', 'amount' => '125.50',
+            'frequency' => 'yearly', 'recurring' => true,
+        ]);
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2027, 'month' => 'March', 'amount' => '80.00',
+            'frequency' => 'yearly', 'recurring' => false,
+        ]);
+
+        $this->get(route('job.table'))->assertOk()
+            ->assertViewHas('year', 2027)->assertViewHas('currentMonth', 'November')
+            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['March'] === '80.00'
+                && $amounts[$job->id]['April'] === '0.00')
+            ->assertSee('Invoice client')->assertSee('aria-current="date"', false)
+            ->assertSee(route('invoice.form', ['job' => $job, 'year' => 2027]), false);
+        $this->assertDatabaseCount('invoices', 2);
+    }
+
+    public function test_empty_invoice_table_renders(): void
+    {
+        $this->get(route('job.table'))->assertOk()->assertSee('No jobs to display.');
+    }
+
     private function data(WorkJob $job, int $year): array
     {
         $invoices = app(JobInvoices::class)->ensureYear($job, $year);

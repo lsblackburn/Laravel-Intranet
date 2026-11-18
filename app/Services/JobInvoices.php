@@ -13,6 +13,18 @@ class JobInvoices
         'July', 'August', 'September', 'October', 'November', 'December',
     ];
 
+    // Resolve uncreated months without writing invoice records from the overview.
+    public function amountsForYear(Collection $invoices, int $year): Collection
+    {
+        $existing = $invoices->where('year', $year)->keyBy('month');
+        $rules = $invoices->filter(fn (Invoice $invoice) => $invoice->recurring || $invoice->stops_recurrence)
+            ->sortByDesc(fn (Invoice $invoice) => $this->position($invoice));
+
+        return collect(self::MONTHS)->mapWithKeys(fn ($month) => [
+            $month => $existing->get($month)?->amount ?? $this->ruleFor($year, $month, $rules)?->amount ?? '0.00',
+        ]);
+    }
+
     private function position(Invoice $invoice): int
     {
         return (int) $invoice->year * 12 + array_search($invoice->month, self::MONTHS, true);

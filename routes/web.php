@@ -53,6 +53,7 @@ Route::middleware(['auth', '2fa.remember'])->group(function () {
 
     Route::resource('clients', \App\Http\Controllers\ClientController::class);
     Route::resource('passwords', \App\Http\Controllers\PasswordController::class);
+    Route::get('/jobs/table', [WorkJobController::class, 'tableView'])->name('job.table');
     Route::resource('jobs', \App\Http\Controllers\WorkJobController::class);
     Route::get('/jobs/{job}/invoices/{year}', [WorkJobController::class, 'invoiceForm'])->where('year', '[0-9]{4}')->name('invoice.form');
     Route::patch('/jobs/{job}/invoices/{year}/update', [WorkJobController::class, 'invoiceUpdate'])->where('year', '[0-9]{4}')->name('invoice.update');

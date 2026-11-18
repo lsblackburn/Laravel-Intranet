@@ -135,5 +135,34 @@ class WorkJobController extends Controller
             ->with('success', 'Invoices updated successfully.');
     }
 
+    public function tableView(Request $request): View
+    {
+        $request->validate(['status' => ['nullable', 'in:all,active,complete']]);
+        $status = $request->input('status', 'all');
+        $today = now();
+        $year = $today->year;
+        $currentMonth = $today->format('F');
+        $months = JobInvoices::MONTHS;
+        $jobs = WorkJob::with('client')
+            ->when($status === 'active', fn ($query) => $query->where('active', true)->where('completed', false))
+            ->when($status === 'complete', fn ($query) => $query->where('completed', true))
+            ->orderBy('project_type')->orderBy('title')->get();
+        $invoices = Invoice::whereIn('work_job_id', $jobs->modelKeys())
+            ->where('year', '<=', $year)
+            ->where(fn ($query) => $query->where('year', $year)
+                ->orWhere('recurring', true)->orWhere('stops_recurrence', true))
+            ->get()->groupBy('work_job_id');
+        $amounts = $jobs->mapWithKeys(fn ($job) => [
+            $job->id => app(JobInvoices::class)->amountsForYear($invoices->get($job->id, collect()), $year),
+        ]);
+        $clientGroups = $jobs->groupBy('client_id')
+            ->sortBy(fn ($group) => mb_strtolower($group->first()->client?->name ?? 'Unassigned'));
+
+        $total = $amounts->sum(fn ($values) => $values->sum());
+        $activeCount = $jobs->filter(fn ($job) => $job->active && ! $job->completed)->count();
+
+        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount'));
+    }
+
 
 }
