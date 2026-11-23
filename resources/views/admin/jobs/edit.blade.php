@@ -55,7 +55,7 @@
                                 <div>
                                     <x-input-label for="title" :value="__('Job Title*')" />
                                     <x-text-input id="title" class="block mt-1 w-full" type="text" required
-                                        name="title" :value="old('name', $job->title)" />
+                                        name="title" :value="old('title', $job->title)" />
                                     <x-input-error :messages="$errors->get('title')" class="mt-2" />
                                 </div>
 
