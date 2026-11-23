@@ -30,6 +30,8 @@ class WorkJobController extends Controller
     
     public function index(Request $request): View
     {
+        $request->validate(['search' => ['nullable', 'string', 'max:255'], 'project_type' => ['nullable', 'string', 'max:255']]);
+        $search = trim($request->input('search') ?? '');
         $client = null;
         $query = WorkJob::with('client');
 
@@ -39,9 +41,19 @@ class WorkJobController extends Controller
             $query->where('client_id', $client->id);
         }
 
-        $jobs = $query->orderBy('created_at', 'asc')->paginate(50)->withQueryString();
+        if ($search !== '') {
+            $query->where(function ($query) use ($search) {
+                $query->where('title', 'like', '%'.$search.'%');
+                $query->orWhere('project_type', 'like', '%'.$search.'%');
+                $query->orWhereHas('client', fn ($clientQuery) => $clientQuery->where('name', 'like', '%'.$search.'%'));
+            });
+        }
+        $query->when($request->filled('project_type'), fn ($query) => $query->where('project_type', $request->input('project_type')));
+        $projectTypes = ProjectType::orderBy('name')->pluck('name');
 
-        return view('admin.jobs.index', compact('jobs', 'client'));
+        $jobs = $query->orderBy('created_at', 'asc')->orderBy('id')->paginate(50)->withQueryString();
+
+        return view($request->ajax() ? 'admin.jobs.results' : 'admin.jobs.index', compact('jobs', 'client', 'projectTypes'));
     }
 
     public function create(): View
