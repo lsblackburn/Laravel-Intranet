@@ -34,6 +34,7 @@
                             ['route' => 'admin.leave-requests', 'label' => 'Leave Requests', 'description' => 'Review team leave requests'],
                             ['route' => 'admin.users', 'label' => 'User Management', 'description' => 'Manage your team'],
                             ['route' => 'jobs.index', 'label' => 'Jobs', 'description' => 'Projects and invoices'],
+                            ['route' => 'job.table', 'label' => 'Invoice Table', 'description' => 'View the invoice table'],
                         ]" />
                     @endif
                 </div>
