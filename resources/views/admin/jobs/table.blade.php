@@ -13,7 +13,7 @@
                 <span aria-hidden="true">/</span>
                 <a href="{{ route('jobs.index') }}">Jobs</a>
                 <span aria-hidden="true">/</span>
-                <span class="text-(--color-text)">Project Forecast</span>
+                <span class="text-(--color-text)">Project Finanacials</span>
             </nav>
 
             <div class="rounded-[14px] border border-(--color-border) bg-(--color-card) shadow-(--workspace-shadow) mb-5 flex flex-wrap items-center justify-between gap-4 p-3">
