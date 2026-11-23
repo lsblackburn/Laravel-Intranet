@@ -56,6 +56,43 @@ class JobInvoicesTest extends TestCase
         $this->get(route('job.table'))->assertOk()->assertSee('No jobs to display.');
     }
 
+    public function test_month_state_cycles_and_preserves_amounts_and_other_months(): void
+    {
+        $job = $this->job();
+        $invoices = app(JobInvoices::class)->ensureYear($job, 2026);
+        $invoices['March']->update(['amount' => '125.50']);
+        $url = route('invoice.state', ['job' => $job, 'year' => 2026, 'month' => 'March']);
+
+        foreach (['Ready To Invoice', 'Already Invoiced', 'In Progress'] as $state) {
+            $this->patchJson($url, ['state' => $state])->assertOk()->assertJson(['state' => $state]);
+            $this->assertSame($state, $invoices['March']->fresh()->state);
+            $this->assertSame('125.50', $invoices['March']->fresh()->amount);
+            $this->assertSame('In Progress', $invoices['April']->fresh()->state);
+        }
+    }
+
+    public function test_month_state_validates_input_and_materializes_inherited_amount(): void
+    {
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2025, 'month' => 'March', 'amount' => '125.50',
+            'frequency' => 'yearly', 'recurring' => true,
+        ]);
+        $url = route('invoice.state', ['job' => $job, 'year' => 2026, 'month' => 'March']);
+        $this->patchJson($url, ['state' => 'invalid'])->assertUnprocessable();
+        $this->patchJson(route('invoice.state', ['job' => $job, 'year' => 2026, 'month' => 'invalid']), ['state' => 'Ready To Invoice'])->assertNotFound();
+        $this->assertDatabaseCount('invoices', 1);
+        $this->patchJson($url, ['state' => 'Ready To Invoice'])->assertOk();
+        $this->assertDatabaseHas('invoices', [
+            'work_job_id' => $job->id, 'year' => 2026, 'month' => 'March',
+            'amount' => 125.50, 'state' => 'Ready To Invoice',
+        ]);
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-23'));
+        $this->get(route('job.table'))->assertOk()->assertViewHas('states',
+            fn ($states) => $states[$job->id]['March'] === 'Ready To Invoice');
+    }
+
     private function data(WorkJob $job, int $year): array
     {
         $invoices = app(JobInvoices::class)->ensureYear($job, $year);
