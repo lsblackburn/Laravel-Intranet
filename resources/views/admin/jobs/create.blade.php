@@ -35,9 +35,9 @@
                                 </div>
 
                                 <div>
-                                    <x-input-label for="project_type" :value="__('Project Type*')" />
+                                    <x-input-label for="project_type" :value="__('Project Type')" />
                                     <x-select-dropdown id="project_type" name="project_type" class="block mt-1 w-full"
-                                        :options="$projectTypes" :value="old('project_type')" :placeholder="__('Select a project type')" />
+                                        :options="$projectTypes" :value="old('project_type')" :placeholder="__('Unassigned')" />
                                     <x-input-error :messages="$errors->get('project_type')" class="mt-2" />
                                 </div>
 

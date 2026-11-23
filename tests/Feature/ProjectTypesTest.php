@@ -71,6 +71,34 @@ class ProjectTypesTest extends TestCase
         $this->assertSame('Web development', $job->fresh()->project_type);
     }
 
+    public function test_deleting_a_type_unassigns_jobs_and_preserves_invoice_history(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactorForRememberedSession::class);
+        $type = ProjectType::create(['name' => 'Website']);
+        $client = \App\Models\Client::create(['name' => 'Client']);
+        $job = \App\Models\WorkJob::create(['title' => 'Site', 'client_id' => $client->id, 'project_type' => 'Website']);
+        $other = \App\Models\WorkJob::create(['title' => 'Other', 'client_id' => $client->id, 'project_type' => 'Marketing']);
+        $invoices = app(\App\Services\JobInvoices::class)->ensureYear($job, 2026);
+        $invoices['March']->update(['amount' => '100.00', 'state' => 'Already Invoiced']);
+
+        $this->delete(route('admin.project-types.delete', $type))->assertRedirect(route('admin.view-project-types'));
+        $this->assertModelMissing($type);
+        $this->assertNull($job->fresh()->project_type);
+        $this->assertSame('Marketing', $other->fresh()->project_type);
+        $this->assertSame(12, $job->invoices()->count());
+        $this->assertSame('100.00', $invoices['March']->fresh()->amount);
+        $this->assertSame('Already Invoiced', $invoices['March']->fresh()->state);
+        $this->get(route('jobs.edit', $job))->assertOk();
+        $this->patch(route('jobs.update', $job), [
+            'title' => $job->title, 'client_id' => $client->id, 'project_type' => '',
+            'notes' => 'Updated without reclassification', 'active' => true, 'completed' => false,
+        ])->assertSessionHasNoErrors()->assertRedirect(route('jobs.edit', $job));
+        $this->assertNull($job->fresh()->project_type);
+        $this->assertSame('Updated without reclassification', $job->fresh()->notes);
+        $this->get(route('job.table'))->assertOk()->assertSee('Unassigned');
+    }
+
     public function test_names_are_required_unique_and_limited_in_length(): void
     {
         $type = ProjectType::create(['name' => 'Website design']);

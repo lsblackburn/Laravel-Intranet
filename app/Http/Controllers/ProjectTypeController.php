@@ -43,7 +43,11 @@ class ProjectTypeController extends Controller
 
     public function deleteProjectTypes(ProjectType $type): RedirectResponse
     {
-        $type->delete();
+        DB::transaction(function () use ($type) {
+            $type = ProjectType::whereKey($type->id)->lockForUpdate()->firstOrFail();
+            WorkJob::where('project_type', $type->name)->update(['project_type' => null]);
+            $type->delete();
+        });
 
         return redirect()->route('admin.view-project-types')->with('success', 'Project type deleted successfully.');
     }

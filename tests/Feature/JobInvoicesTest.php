@@ -132,21 +132,29 @@ class JobInvoicesTest extends TestCase
         $this->assertDatabaseMissing('invoices', ['work_job_id' => $job->id]);
     }
 
-    public function test_nonzero_invoice_amounts_block_job_deletion_regardless_of_state_or_year(): void
+    public function test_deleting_jobs_removes_all_invoices_regardless_of_amount_state_or_year(): void
     {
+        $other = $this->job();
+        $service = app(JobInvoices::class);
+        $otherInvoices = $service->ensureYear($other, 2024);
+        $otherInvoices['March']->update(['amount' => '75.00']);
         foreach (['In Progress', 'Ready To Invoice', 'Already Invoiced'] as $state) {
             $job = $this->job();
-            $invoices = app(JobInvoices::class)->ensureYear($job, 2024);
+            $invoices = $service->ensureYear($job, 2024);
+            $service->ensureYear($job, 2027);
             $invoices['March']->update(['amount' => '100.00', 'state' => $state]);
-            // Offsetting credits must not allow deletion based on a zero total.
             $invoices['April']->update(['amount' => '-100.00']);
-            $this->delete(route('jobs.destroy', $job))->assertRedirect(route('jobs.index'))->assertSessionHasErrors('job');
-            $this->assertModelExists($job);
-            $this->assertSame(12, $job->invoices()->count());
-            $this->assertSame('100.00', $invoices['March']->fresh()->amount);
-            $this->assertSame($state, $invoices['March']->fresh()->state);
+            $this->get(route('jobs.index'))->assertOk()
+                ->assertSee('all associated invoices across every year')
+                ->assertSee('delete-jobs-'.$job->id)
+                ->assertSee(route('jobs.destroy', $job), false);
+            $this->delete(route('jobs.destroy', $job))->assertRedirect(route('jobs.index'))->assertSessionHasNoErrors();
+            $this->assertModelMissing($job);
+            $this->assertDatabaseMissing('invoices', ['work_job_id' => $job->id]);
         }
-        $this->get(route('jobs.index'))->assertOk()->assertSee('Invoice history retained; deletion unavailable.');
+        $this->assertModelExists($other);
+        $this->assertSame(12, $other->invoices()->count());
+        $this->assertSame('75.00', $otherInvoices['March']->fresh()->amount);
     }
 
     private function data(WorkJob $job, int $year): array

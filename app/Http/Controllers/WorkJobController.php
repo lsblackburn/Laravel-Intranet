@@ -20,7 +20,7 @@ class WorkJobController extends Controller
         // Validate the fields submitted by the job form.
         return $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'project_type' => ['required', 'string', 'max:255', 'exists:project_types,name'],
+            'project_type' => ['nullable', 'string', 'max:255', 'exists:project_types,name'],
             'notes' => ['nullable', 'string'],
             'client_id' => ['required', 'exists:clients,id'],
             'active' => ['required', 'boolean'],
@@ -31,9 +31,7 @@ class WorkJobController extends Controller
     public function index(Request $request): View
     {
         $client = null;
-        $query = WorkJob::with('client')->withExists([
-            'invoices as has_nonzero_invoices' => fn ($query) => $query->where('amount', '!=', 0),
-        ]);
+        $query = WorkJob::with('client');
 
         if ($request->filled('client_id')) {
             $request->validate(['client_id' => ['integer']]);
@@ -188,26 +186,13 @@ class WorkJobController extends Controller
 
     public function destroy(WorkJob $job): RedirectResponse
     {
-        $deleted = DB::transaction(function () use ($job) {
-            // Invoice writes lock this same job, so the check and deletion stay atomic.
+        DB::transaction(function () use ($job) {
             $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
-            if ($job->invoices()->where('amount', '!=', 0)->exists()) {
-                return false;
-            }
-
             $job->invoices()->delete();
             $job->delete();
-
-            return true;
         });
 
-        if (! $deleted) {
-            return to_route('jobs.index')->withErrors([
-                'job' => 'This job cannot be deleted because it has non-zero invoice amounts. Its invoice history must be retained.',
-            ]);
-        }
-
-        return to_route('jobs.index')->with('success', 'Job was deleted successfully.');
+        return to_route('jobs.index')->with('success', 'Job and all associated invoices were deleted successfully.');
     }
 
 }
