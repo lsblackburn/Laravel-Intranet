@@ -135,6 +135,24 @@ class WorkJobController extends Controller
             ->with('success', 'Invoices updated successfully.');
     }
 
+    public function invoiceState(Request $request, WorkJob $job, int $year, string $month): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($year >= 1901 && $year <= 2155 && in_array($month, JobInvoices::MONTHS, true), 404);
+        $data = $request->validate([
+            'state' => ['required', 'in:In Progress,Ready To Invoice,Already Invoiced'],
+        ]);
+
+        $invoice = DB::transaction(function () use ($job, $year, $month, $data) {
+            $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+            $invoice = app(JobInvoices::class)->ensureYear($job, $year)->get($month);
+            $invoice->update(['state' => $data['state']]);
+
+            return $invoice;
+        });
+
+        return response()->json(['state' => $invoice->state]);
+    }
+
     public function tableView(Request $request): View
     {
         $request->validate(['status' => ['nullable', 'in:all,active,complete']]);
@@ -155,14 +173,14 @@ class WorkJobController extends Controller
         $amounts = $jobs->mapWithKeys(fn ($job) => [
             $job->id => app(JobInvoices::class)->amountsForYear($invoices->get($job->id, collect()), $year),
         ]);
+        $states = $invoices->map(fn ($rows) => $rows->where('year', $year)->pluck('state', 'month'));
         $clientGroups = $jobs->groupBy('client_id')
             ->sortBy(fn ($group) => mb_strtolower($group->first()->client?->name ?? 'Unassigned'));
 
         $total = $amounts->sum(fn ($values) => $values->sum());
         $activeCount = $jobs->filter(fn ($job) => $job->active && ! $job->completed)->count();
 
-        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount'));
+        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states'));
     }
-
 
 }
