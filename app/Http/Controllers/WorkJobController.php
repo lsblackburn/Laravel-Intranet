@@ -186,4 +186,12 @@ class WorkJobController extends Controller
         return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states'));
     }
 
+    public function destroy(Workjob $job): RedirectResponse
+    {
+        // Function to delete a job and its associated data from the database
+        DB::transaction(fn () => $job->delete());
+
+        return to_route('jobs.index')->with('success', 'Job was deleted successfully.');
+    }
+
 }
