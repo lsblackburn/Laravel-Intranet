@@ -51,7 +51,7 @@
                                             <x-primary-link href="{{ route('clients.edit', $client) }}">View/Edit</x-primary-link>
 
                                             <x-table-delete resource="clients" :record="$client" :label="$client->name">
-                                                This permanently deletes the client, and its associated credentials. History of the client and projects completed (e.g., financial reports, marketing campaigns, etc.) will remain in the system.
+                                                This permanently deletes the client, all associated jobs and their invoices across every year, including invoices already marked as invoiced. Associated contacts and credentials will also be deleted.
                                             </x-table-delete>
                                         </div>
 
