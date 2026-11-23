@@ -92,7 +92,7 @@
 
             <div class="mb-3 px-5 box-border flex flex-wrap items-end justify-between gap-3 text-xs text-(--color-subtletext)">
 
-                <p>Click a monthly amount to cycle its invoice status. Select a project to edit amounts. All amounts in GBP.</p>
+                <p class="text-(--color-text) text-xs sm:text-sm md:text-base">Click a monthly amount to cycle its invoice status. Select a project to edit amounts. All amounts in GBP.</p>
 
                 <span class="flex flex-col items-center gap-2">
 
