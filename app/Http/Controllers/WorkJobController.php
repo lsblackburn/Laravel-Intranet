@@ -91,9 +91,12 @@ class WorkJobController extends Controller
     {
         $data = $this->validatedData($request);
 
-        $job->update($data);
-
-        $job = WorkJob::where('title', $data['title'])->first();
+        DB::transaction(function () use ($job, $data) {
+            $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+            $job->update($data);
+            $job->invoices()->where('client_id', '!=', $job->client_id)
+                ->update(['client_id' => $job->client_id]);
+        });
 
         return redirect()->route('jobs.edit', $job)->with('success', 'Job updated successfully.');
     }

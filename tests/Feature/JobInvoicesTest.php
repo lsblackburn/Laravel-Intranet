@@ -157,6 +157,45 @@ class JobInvoicesTest extends TestCase
         $this->assertSame('75.00', $otherInvoices['March']->fresh()->amount);
     }
 
+    public function test_reassigning_a_job_moves_invoice_ownership_and_survives_deleting_the_old_client(): void
+    {
+        $job = $this->job();
+        $oldClient = $job->client;
+        $newClient = Client::create(['name' => 'New client']);
+        $service = app(JobInvoices::class);
+        $invoices = $service->ensureYear($job, 2025);
+        $invoices['March']->update(['amount' => '125.50', 'frequency' => 'monthly', 'recurring' => true, 'state' => 'Already Invoiced']);
+        $invoices['July']->update(['amount' => '0.00', 'stops_recurrence' => true]);
+        $service->ensureYear($job, 2027);
+        $before = $job->invoices()->get()->mapWithKeys(fn ($invoice) => [
+            $invoice->id => $invoice->only(['amount', 'year', 'month', 'frequency', 'recurring', 'stops_recurrence', 'state']),
+        ])->all();
+        // A duplicate title must not change the redirect target or another job's ownership.
+        $other = WorkJob::create(['title' => $job->title, 'client_id' => $newClient->id, 'project_type' => '']);
+        $otherInvoice = $service->ensureYear($other, 2025)['March'];
+        $otherInvoice->update(['amount' => '75.00']);
+
+        $this->patch(route('jobs.update', $job), [
+            'title' => $job->title, 'client_id' => $newClient->id, 'project_type' => null,
+            'active' => true, 'completed' => false,
+        ])->assertSessionHasNoErrors()->assertRedirect(route('jobs.edit', $job));
+        $this->assertEquals($newClient->id, $job->fresh()->client_id);
+        $this->assertSame(24, $job->invoices()->count());
+        foreach ($job->invoices()->get() as $invoice) {
+            $this->assertEquals($newClient->id, $invoice->client_id);
+            $this->assertSame($before[$invoice->id], $invoice->only(array_keys($before[$invoice->id])));
+        }
+        $this->assertSame('75.00', $otherInvoice->fresh()->amount);
+        $this->delete(route('clients.destroy', $oldClient))->assertRedirect(route('clients.index'));
+        $this->assertModelMissing($oldClient);
+        $this->assertModelExists($job);
+        $this->assertSame(24, $job->invoices()->count());
+        $this->assertSame('125.50', $invoices['March']->fresh()->amount);
+        $this->assertTrue($invoices['March']->fresh()->recurring);
+        $this->assertSame('Already Invoiced', $invoices['March']->fresh()->state);
+        $this->assertTrue($invoices['July']->fresh()->stops_recurrence);
+    }
+
     private function data(WorkJob $job, int $year): array
     {
         $invoices = app(JobInvoices::class)->ensureYear($job, $year);
