@@ -1,3 +1,4 @@
+import ajaxList from './ajax-list';
 import AirDatepicker from 'air-datepicker';
 import 'air-datepicker/air-datepicker.css';
 import { Calendar } from '@fullcalendar/core';
@@ -7,6 +8,8 @@ import timeGridPlugin from '@fullcalendar/timegrid';
 import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
+
+Alpine.data('ajaxList', ajaxList);
 
 Alpine.data('invoiceState', (state, url, token) => ({
     state, saving: false, error: '',

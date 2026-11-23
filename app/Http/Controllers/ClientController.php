@@ -22,12 +22,15 @@ class ClientController extends Controller
         ]);
     }
     
-    public function index(): View
+    public function index(Request $request): View
     {
-        // Function to display a paginated list of clients ordered by name
-        $clients = Client::orderBy('name', 'asc')->paginate(50);
+        $request->validate(['search' => ['nullable', 'string', 'max:255']]);
+        $search = trim($request->input('search') ?? '');
+        $clients = Client::query()
+            ->when($search !== '', fn ($query) => $query->where('name', 'like', '%'.$search.'%'))
+            ->orderBy('name')->orderBy('id')->paginate(50)->withQueryString();
 
-        return view('credentials.clients.index', compact('clients'));
+        return view($request->ajax() ? 'credentials.clients.results' : 'credentials.clients.index', compact('clients'));
     }
 
     public function create(): View

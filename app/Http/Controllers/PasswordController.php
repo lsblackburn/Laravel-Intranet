@@ -27,6 +27,8 @@ class PasswordController extends Controller
     
     public function index(Request $request): View
     {
+        $request->validate(['search' => ['nullable', 'string', 'max:255']]);
+        $search = trim($request->input('search') ?? '');
         $client = null;
         $query = Password::with('client');
 
@@ -36,9 +38,17 @@ class PasswordController extends Controller
             $query->where('client_id', $client->id);
         }
 
-        $passwords = $query->orderBy('name', 'asc')->paginate(50)->withQueryString();
+        if ($search !== '') {
+            $query->where(function ($query) use ($search) {
+                $query->where('name', 'like', '%'.$search.'%');
+                $query->orWhere('username', 'like', '%'.$search.'%');
+                $query->orWhere('url', 'like', '%'.$search.'%');
+                $query->orWhereHas('client', fn ($clientQuery) => $clientQuery->where('name', 'like', '%'.$search.'%'));
+            });
+        }
+        $passwords = $query->orderBy('name', 'asc')->orderBy('id')->paginate(50)->withQueryString();
 
-        return view('credentials.passwords.index', compact('passwords', 'client'));
+        return view($request->ajax() ? 'credentials.passwords.results' : 'credentials.passwords.index', compact('passwords', 'client'));
     }
 
     public function create(): View

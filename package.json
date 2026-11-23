@@ -4,7 +4,9 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "node --test tests/js/*.test.cjs",
+        "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=resources/js/ajax-list.js --test-coverage-lines=100 --test-coverage-branches=100 --test-coverage-functions=100 tests/js/*.test.cjs"
     },
     "devDependencies": {
         "@emnapi/core": "^1.10.0",
