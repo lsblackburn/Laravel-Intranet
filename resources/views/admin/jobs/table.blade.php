@@ -175,7 +175,7 @@
                                                             :aria-label="@js($job->title.' ? '.$month.' '.$year.': ') + state + '. Click to change status.'"
                                                             :title="state + ' ? click to change status'"
                                                             class="w-full cursor-pointer rounded px-1 py-1 text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-primary) disabled:cursor-wait disabled:opacity-50"
-                                                            :class="{ 'text-(--color-text)': state === 'In Progress', 'text-(--color-success-text)': state === 'Ready To Invoice', 'text-(--color-info-text)': state === 'Already Invoiced' }">
+                                                            :class="{ 'text-(--color-text)': state === 'In Progress', 'text-(--color-success-text) font-bold': state === 'Ready To Invoice', 'text-(--color-info-text) font-bold': state === 'Already Invoiced' }">
                                                             &pound;{{ number_format((float) $amounts[$job->id][$month], 2) }}
                                                         </button>
                                                         <p x-cloak x-show="error" x-text="error" role="alert" class="max-w-40 whitespace-normal text-xs text-(--color-danger-text)"></p>
