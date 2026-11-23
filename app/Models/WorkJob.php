@@ -13,6 +13,11 @@ class WorkJob extends Model
         return $this->belongsTo(Client::class);
     }
     
+    public function invoices(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(Invoice::class);
+    }
+
     protected $fillable = [
         'title',
         'project_type',

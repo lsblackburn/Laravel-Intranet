@@ -118,6 +118,37 @@ class JobInvoicesTest extends TestCase
         }
     }
 
+    public function test_jobs_without_invoices_or_with_only_zero_amounts_can_be_deleted(): void
+    {
+        $empty = $this->job();
+        $this->delete(route('jobs.destroy', $empty))->assertRedirect(route('jobs.index'))->assertSessionHasNoErrors();
+        $this->assertModelMissing($empty);
+
+        $job = $this->job();
+        app(JobInvoices::class)->ensureYear($job, 2025);
+        app(JobInvoices::class)->ensureYear($job, 2027);
+        $this->delete(route('jobs.destroy', $job))->assertRedirect(route('jobs.index'))->assertSessionHasNoErrors();
+        $this->assertModelMissing($job);
+        $this->assertDatabaseMissing('invoices', ['work_job_id' => $job->id]);
+    }
+
+    public function test_nonzero_invoice_amounts_block_job_deletion_regardless_of_state_or_year(): void
+    {
+        foreach (['In Progress', 'Ready To Invoice', 'Already Invoiced'] as $state) {
+            $job = $this->job();
+            $invoices = app(JobInvoices::class)->ensureYear($job, 2024);
+            $invoices['March']->update(['amount' => '100.00', 'state' => $state]);
+            // Offsetting credits must not allow deletion based on a zero total.
+            $invoices['April']->update(['amount' => '-100.00']);
+            $this->delete(route('jobs.destroy', $job))->assertRedirect(route('jobs.index'))->assertSessionHasErrors('job');
+            $this->assertModelExists($job);
+            $this->assertSame(12, $job->invoices()->count());
+            $this->assertSame('100.00', $invoices['March']->fresh()->amount);
+            $this->assertSame($state, $invoices['March']->fresh()->state);
+        }
+        $this->get(route('jobs.index'))->assertOk()->assertSee('Invoice history retained; deletion unavailable.');
+    }
+
     private function data(WorkJob $job, int $year): array
     {
         $invoices = app(JobInvoices::class)->ensureYear($job, $year);

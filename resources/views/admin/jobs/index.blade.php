@@ -9,6 +9,10 @@
 
         <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
 
+            @error('job')
+                <p role="alert" class="mb-5 rounded-lg border border-(--color-danger)/30 bg-(--color-danger)/10 p-4 text-sm text-(--color-danger-text)">{{ $message }}</p>
+            @enderror
+
             <x-primary-link class="mb-5" href="{{ route('job.table') }}">Invoice table</x-primary-link>
 
             @if ($client)
@@ -79,9 +83,13 @@
                                                 <x-primary-link href="{{ route('jobs.edit', $job) }}">View/Edit</x-primary-link>
                                             @endif
 
-                                            <x-table-delete resource="jobs" :record="$job" :label="$job->name">
-                                                This permanently deletes the password.
-                                            </x-table-delete>
+                                            @if ($job->has_nonzero_invoices)
+                                                <span class="text-xs text-(--color-subtletext)">Invoice history retained; deletion unavailable.</span>
+                                            @else
+                                                <x-table-delete resource="jobs" :record="$job" :label="$job->title">
+                                                    This permanently deletes the job and its zero-value invoice records.
+                                                </x-table-delete>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
