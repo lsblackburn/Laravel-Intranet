@@ -64,9 +64,7 @@ class WorkJobController extends Controller
     {
         $data = $this->validatedData($request);
 
-        WorkJob::create($data);
-
-        $job = WorkJob::where('title', $data['title'])->first();
+        $job = WorkJob::create($data);
 
         return redirect()->route('jobs.edit', $job)->with('success', 'Job created successfully.');
     }
