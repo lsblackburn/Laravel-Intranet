@@ -88,7 +88,8 @@
                                     <label for="completed" class="inline-flex items-center">
                                         <input type="hidden" name="completed" value="0">
                                         <input id="completed" value="1" type="checkbox"
-                                            class="rounded bg-(--color-background) border-(--color-border) text-(--color-primary) shadow-sm focus:ring-(--color-primary)"
+                                            @checked(old('completed', $job->completed) == 1)
+                                            class="rounded bg-(--color-background) border-(--color-border) text-(--color-primary) accent-(--color-primary) shadow-sm focus:ring-(--color-primary)"
                                             name="completed" x-model="completed">
                                         <span
                                             class="ms-2 text-sm text-(--color-subtletext)">{{ __('Job completed?') }}</span>
