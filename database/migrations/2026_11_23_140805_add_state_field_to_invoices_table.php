@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::table('invoices', function (Blueprint $table) {
             $table->enum('state', [
                 'In Progress', 'Ready To Invoice', 'Already Invoiced',
-            ]);
+            ])->default('In Progress');
         });
     }
 
