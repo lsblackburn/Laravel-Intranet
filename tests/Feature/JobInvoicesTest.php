@@ -180,6 +180,44 @@ class JobInvoicesTest extends TestCase
         $this->assertSame(1, Invoice::where('work_job_id', $job->id)->where('recurring', true)->count());
     }
 
+    public function test_narrowing_monthly_recurrence_clears_inherited_amounts_but_preserves_one_offs(): void
+    {
+        $job = $this->job();
+        $service = app(JobInvoices::class);
+        $data = $this->data($job, 2026);
+        $data['amounts']['March'] = '100';
+        $data['frequencies']['March'] = 'monthly';
+        $service->update($job, 2026, $data);
+        $current = $service->ensureYear($job, 2026);
+        $future = $service->ensureYear($job, 2027);
+        // Explicit one-off amounts do not match the inherited monthly amount.
+        $current['May']->update(['amount' => '75.00']);
+        $future['June']->update(['amount' => '225.00']);
+        $data = $this->data($job, 2026);
+        $data['frequencies']['March'] = 'yearly';
+        $this->patch(route('invoice.update', ['job' => $job, 'year' => 2026]), $data)
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $current = $service->ensureYear($job, 2026);
+        $future = $service->ensureYear($job, 2027);
+        $unopened = $service->amountsForYear(Invoice::where('work_job_id', $job->id)->get(), 2028);
+        foreach (JobInvoices::MONTHS as $month) {
+            $this->assertSame(match ($month) {
+                'March' => '100.00', 'May' => '75.00', default => '0.00',
+            }, $current[$month]->amount);
+            $this->assertSame(match ($month) {
+                'March' => '100.00', 'June' => '225.00', default => '0.00',
+            }, $future[$month]->amount);
+            $this->assertSame($month === 'March' ? '100.00' : '0.00', $unopened[$month]);
+        }
+        $this->assertSame('yearly', $current['April']->frequency);
+        $this->assertSame(1, Invoice::where('work_job_id', $job->id)->where('recurring', true)->count());
+        // Saving the narrowed form again must not revive the old monthly rule.
+        $service->update($job, 2026, $this->data($job, 2026));
+        $this->assertSame('0.00', $current['April']->fresh()->amount);
+        $this->assertSame('225.00', $future['June']->fresh()->amount);
+    }
+
     public function test_invalid_amounts_do_not_create_records(): void
     {
         $job = $this->job();

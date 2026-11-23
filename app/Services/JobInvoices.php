@@ -83,6 +83,16 @@ class JobInvoices
     {
         $invoices = $this->ensureYear($job, $year);
         $followingFrequencies = $this->frequenciesFor($job, $invoices);
+        // Capture inheritance before changing rules: afterward an uncovered month
+        // cannot be distinguished from an explicit one-off using the new rules.
+        $previousRules = $this->rules($job);
+        $inheritedIds = Invoice::where('work_job_id', $job->id)->where('year', '>=', $year)->get()
+            ->filter(function (Invoice $invoice) use ($previousRules) {
+                $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $previousRules);
+
+                return ! $invoice->recurring && ! $invoice->stops_recurrence && $rule
+                    && $invoice->amount === $rule->amount && $invoice->frequency === $rule->frequency;
+            })->mapWithKeys(fn (Invoice $invoice) => [$invoice->id => true])->all();
         $localChanges = [];
 
         foreach (self::MONTHS as $month) {
@@ -131,8 +141,15 @@ class JobInvoices
         $rules = $this->rules($job);
         foreach (Invoice::where('work_job_id', $job->id)->where('year', '>=', $year)->get() as $invoice) {
             $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $rules);
-            if ($rule && ! $invoice->recurring && ! in_array($invoice->id, $localChanges, true)) {
-                $invoice->update(['amount' => $rule->amount, 'frequency' => $rule->frequency]);
+            if ($invoice->recurring || $invoice->stops_recurrence || in_array($invoice->id, $localChanges, true)) {
+                continue;
+            }
+
+            if ($rule || isset($inheritedIds[$invoice->id])) {
+                $invoice->update([
+                    'amount' => $rule?->amount ?? '0.00',
+                    'frequency' => $rule?->frequency ?? 'yearly',
+                ]);
             }
         }
     }
