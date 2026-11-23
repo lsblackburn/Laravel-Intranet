@@ -58,7 +58,7 @@
 
             </div>
 
-            <div class="mb-3 flex flex-wrap items-center justify-between gap-3 text-xs text-(--color-subtletext)">
+            <div class="mb-3 flex flex-wrap items-end justify-between gap-3 text-xs text-(--color-subtletext)">
 
                 <p>Click a monthly amount to cycle its invoice status. Select a project to edit amounts. All amounts in GBP.</p>
 
@@ -136,7 +136,12 @@
 
                                     <th scope="rowgroup" class="bg-(--color-primary) text-sm text-(--color-background) text-left">
 
-                                        <button type="button" class="flex w-full items-center gap-3 text-left" @click="open = !open" :aria-expanded="open" aria-expanded="true"><span aria-hidden="true" x-text="open ? '&#8964;' : '&#8250;'">&#8964;</span>{{ $clientJobs->first()->client?->name ?? 'Unassigned' }}</button>
+                                        <button type="button" class="flex w-full items-center gap-3 text-left" @click="open = !open" :aria-expanded="open" aria-expanded="true">
+                                            <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="shrink-0 transition-transform motion-reduce:transition-none" :class="{ 'rotate-90': open }">
+                                                <path d="m9 18 6-6-6-6" />
+                                            </svg>
+                                            {{ $clientJobs->first()->client?->name ?? 'Unassigned' }}
+                                        </button>
                                     
                                     </th>
 
