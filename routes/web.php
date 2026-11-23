@@ -53,11 +53,6 @@ Route::middleware(['auth', '2fa.remember'])->group(function () {
 
     Route::resource('clients', \App\Http\Controllers\ClientController::class);
     Route::resource('passwords', \App\Http\Controllers\PasswordController::class);
-    Route::get('/jobs/table', [WorkJobController::class, 'tableView'])->name('job.table');
-    Route::resource('jobs', \App\Http\Controllers\WorkJobController::class);
-    Route::get('/jobs/{job}/invoices/{year}', [WorkJobController::class, 'invoiceForm'])->where('year', '[0-9]{4}')->name('invoice.form');
-    Route::patch('/jobs/{job}/invoices/{year}/{month}/state', [WorkJobController::class, 'invoiceState'])->where('year', '[0-9]{4}')->name('invoice.state');
-    Route::patch('/jobs/{job}/invoices/{year}/update', [WorkJobController::class, 'invoiceUpdate'])->where('year', '[0-9]{4}')->name('invoice.update');
 });
 
 Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
@@ -72,6 +67,12 @@ Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
     Route::post('/admin/users/promote/{user}', [UserManagementController::class, 'promote'])->name('admin.users.promote');
     Route::post('/admin/users/demote/{user}', [UserManagementController::class, 'demote'])->name('admin.users.demote');
     Route::post('/admin/leave-requests/response/{request}', [LeaveController::class, 'leaveResponse'])->name('admin.leave-requests.response');
+
+    Route::get('/jobs/table', [WorkJobController::class, 'tableView'])->name('job.table');
+    Route::resource('jobs', \App\Http\Controllers\WorkJobController::class);
+    Route::get('/jobs/{job}/invoices/{year}', [WorkJobController::class, 'invoiceForm'])->where('year', '[0-9]{4}')->name('invoice.form');
+    Route::patch('/jobs/{job}/invoices/{year}/{month}/state', [WorkJobController::class, 'invoiceState'])->where('year', '[0-9]{4}')->name('invoice.state');
+    Route::patch('/jobs/{job}/invoices/{year}/update', [WorkJobController::class, 'invoiceUpdate'])->where('year', '[0-9]{4}')->name('invoice.update');
     
     Route::get('/admin/app-configuration', [AdminRoutesController::class, 'viewConfig'])->name('admin.view-config');
     Route::get('/admin/app-configuration/leave-rules', [AdminRoutesController::class, 'viewLeaveRules'])->name('admin.view-leave-rules');
