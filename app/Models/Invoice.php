@@ -21,6 +21,7 @@ class Invoice extends Model
         'frequency',
         'recurring',
         'stops_recurrence',
+        'state',
     ];
 
     protected function casts(): array
