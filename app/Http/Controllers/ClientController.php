@@ -7,6 +7,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 use App\Models\Client;
+use App\Models\WorkJob;
+use App\Models\Invoice;
 use Illuminate\Validation\Rule;
 
 class ClientController extends Controller
@@ -118,10 +120,17 @@ class ClientController extends Controller
 
     public function destroy(Client $client): RedirectResponse
     {
-        // Function to delete a client and its associated data from the database
-        DB::transaction(fn () => $client->delete());
+        DB::transaction(function () use ($client) {
+            $client = Client::whereKey($client->id)->lockForUpdate()->firstOrFail();
+            $jobs = WorkJob::where('client_id', $client->id)->orderBy('id')->lockForUpdate()->get();
 
-        return to_route('clients.index')->with('success', 'Client and its associated data was deleted successfully.');
+            Invoice::where('client_id', $client->id)
+                ->orWhereIn('work_job_id', $jobs->modelKeys())->delete();
+            WorkJob::whereIn('id', $jobs->modelKeys())->delete();
+            $client->delete();
+        });
+
+        return to_route('clients.index')->with('success', 'Client, associated jobs, invoices, contacts and credentials were deleted successfully.');
     }
 
 }

@@ -12,6 +12,7 @@ use App\Http\Controllers\ProjectTypeController;
 use App\Http\Controllers\NonWorkDayController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\ClientController;
+use App\Http\Controllers\WorkJobController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -52,6 +53,11 @@ Route::middleware(['auth', '2fa.remember'])->group(function () {
 
     Route::resource('clients', \App\Http\Controllers\ClientController::class);
     Route::resource('passwords', \App\Http\Controllers\PasswordController::class);
+    Route::get('/jobs/table', [WorkJobController::class, 'tableView'])->name('job.table');
+    Route::resource('jobs', \App\Http\Controllers\WorkJobController::class);
+    Route::get('/jobs/{job}/invoices/{year}', [WorkJobController::class, 'invoiceForm'])->where('year', '[0-9]{4}')->name('invoice.form');
+    Route::patch('/jobs/{job}/invoices/{year}/{month}/state', [WorkJobController::class, 'invoiceState'])->where('year', '[0-9]{4}')->name('invoice.state');
+    Route::patch('/jobs/{job}/invoices/{year}/update', [WorkJobController::class, 'invoiceUpdate'])->where('year', '[0-9]{4}')->name('invoice.update');
 });
 
 Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {

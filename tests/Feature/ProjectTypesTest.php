@@ -39,6 +39,66 @@ class ProjectTypesTest extends TestCase
         $this->assertDatabaseMissing('project_types', ['id' => $type->id]);
     }
 
+    public function test_renaming_a_type_preserves_job_classification_editing_and_financial_grouping(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactorForRememberedSession::class);
+        $type = ProjectType::create(['name' => 'Website design']);
+        ProjectType::create(['name' => 'Marketing']);
+        $client = \App\Models\Client::create(['name' => 'Test client']);
+        $attributes = ['client_id' => $client->id, 'project_type' => $type->name, 'active' => true, 'completed' => false];
+        $job = \App\Models\WorkJob::create(['title' => 'Website', ...$attributes]);
+        $completed = \App\Models\WorkJob::create(['title' => 'Completed website', ...$attributes, 'completed' => true]);
+        $other = \App\Models\WorkJob::create(['title' => 'Campaign', ...$attributes, 'project_type' => 'Marketing']);
+
+        $this->patch(route('admin.project-types.update', $type), ['name' => 'Web development'])
+            ->assertSessionHasNoErrors()->assertRedirect(route('admin.view-project-types'));
+        $this->assertSame('Web development', $job->fresh()->project_type);
+        $this->assertSame('Web development', $completed->fresh()->project_type);
+        $this->assertSame('Marketing', $other->fresh()->project_type);
+        $this->get(route('jobs.edit', $job))->assertOk()
+            ->assertViewHas('job', fn ($record) => $record->project_type === 'Web development')
+            ->assertViewHas('projectTypes', fn ($types) => $types->has('Web development') && ! $types->has('Website design'));
+        $this->patch(route('jobs.update', $job), [
+            'title' => $job->title, 'project_type' => $job->fresh()->project_type,
+            'client_id' => $client->id, 'active' => true, 'completed' => false, 'notes' => 'Unrelated change',
+        ])->assertSessionHasNoErrors()->assertRedirect(route('jobs.edit', $job));
+        $this->assertSame('Unrelated change', $job->fresh()->notes);
+        $this->get(route('job.table'))->assertOk()->assertSee('Web development')->assertDontSee('Website design');
+
+        $this->patch(route('admin.project-types.update', $type), ['name' => 'Marketing'])
+            ->assertSessionHasErrors('name', errorBag: 'updateProjectType'.$type->id);
+        $this->assertSame('Web development', $job->fresh()->project_type);
+    }
+
+    public function test_deleting_a_type_unassigns_jobs_and_preserves_invoice_history(): void
+    {
+        $this->actingAs(User::factory()->create(['role' => 'admin']));
+        $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactorForRememberedSession::class);
+        $type = ProjectType::create(['name' => 'Website']);
+        $client = \App\Models\Client::create(['name' => 'Client']);
+        $job = \App\Models\WorkJob::create(['title' => 'Site', 'client_id' => $client->id, 'project_type' => 'Website']);
+        $other = \App\Models\WorkJob::create(['title' => 'Other', 'client_id' => $client->id, 'project_type' => 'Marketing']);
+        $invoices = app(\App\Services\JobInvoices::class)->ensureYear($job, 2026);
+        $invoices['March']->update(['amount' => '100.00', 'state' => 'Already Invoiced']);
+
+        $this->delete(route('admin.project-types.delete', $type))->assertRedirect(route('admin.view-project-types'));
+        $this->assertModelMissing($type);
+        $this->assertNull($job->fresh()->project_type);
+        $this->assertSame('Marketing', $other->fresh()->project_type);
+        $this->assertSame(12, $job->invoices()->count());
+        $this->assertSame('100.00', $invoices['March']->fresh()->amount);
+        $this->assertSame('Already Invoiced', $invoices['March']->fresh()->state);
+        $this->get(route('jobs.edit', $job))->assertOk();
+        $this->patch(route('jobs.update', $job), [
+            'title' => $job->title, 'client_id' => $client->id, 'project_type' => '',
+            'notes' => 'Updated without reclassification', 'active' => true, 'completed' => false,
+        ])->assertSessionHasNoErrors()->assertRedirect(route('jobs.edit', $job));
+        $this->assertNull($job->fresh()->project_type);
+        $this->assertSame('Updated without reclassification', $job->fresh()->notes);
+        $this->get(route('job.table'))->assertOk()->assertSee('Unassigned');
+    }
+
     public function test_names_are_required_unique_and_limited_in_length(): void
     {
         $type = ProjectType::create(['name' => 'Website design']);

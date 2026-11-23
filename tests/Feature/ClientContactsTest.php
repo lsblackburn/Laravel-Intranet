@@ -11,6 +11,39 @@ class ClientContactsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_client_deletion_removes_jobs_and_invoices_after_showing_confirmation_warning(): void
+    {
+        $this->actingAs(User::factory()->create());
+        $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactorForRememberedSession::class);
+        $client = Client::create(['name' => 'Delete client']);
+        $other = Client::create(['name' => 'Keep client']);
+        $service = app(\App\Services\JobInvoices::class);
+        foreach ([$client, $other] as $owner) {
+            $job = \App\Models\WorkJob::create(['title' => 'Job', 'client_id' => $owner->id, 'project_type' => 'Website']);
+            $invoices = $service->ensureYear($job, 2025);
+            $service->ensureYear($job, 2027);
+            $invoices['March']->update(['amount' => '100.00', 'state' => 'Already Invoiced']);
+        }
+        $client->contacts()->create($this->contact());
+        $password = \App\Models\Password::create([
+            'client_id' => $client->id, 'name' => 'Login', 'username' => 'user', 'password' => 'secret',
+        ]);
+        $this->get(route('clients.index'))->assertOk()
+            ->assertSee('all associated jobs and their invoices across every year')
+            ->assertSee('delete-clients-'.$client->id)
+            ->assertSee(route('clients.destroy', $client), false);
+        $this->delete(route('clients.destroy', $client))->assertRedirect(route('clients.index'))->assertSessionHasNoErrors();
+        $this->assertModelMissing($client);
+        $this->assertDatabaseMissing('work_jobs', ['client_id' => $client->id]);
+        $this->assertDatabaseMissing('invoices', ['client_id' => $client->id]);
+        $this->assertDatabaseMissing('client_contacts', ['client_id' => $client->id]);
+        $this->assertModelMissing($password);
+        $this->assertModelExists($other);
+        $this->assertDatabaseCount('work_jobs', 1);
+        $this->assertSame(24, \App\Models\Invoice::where('client_id', $other->id)->count());
+        $this->assertDatabaseHas('invoices', ['client_id' => $other->id, 'month' => 'March', 'year' => 2025, 'amount' => 100, 'state' => 'Already Invoiced']);
+    }
+
     private function contact(string $email = 'contact@example.com'): array
     {
         return ['name' => 'Jane Smith', 'role' => 'Manager', 'email' => $email, 'phone' => '0123456789', 'notes' => 'Main contact'];

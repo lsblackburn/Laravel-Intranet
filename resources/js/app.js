@@ -8,6 +8,30 @@ import Alpine from 'alpinejs';
 
 window.Alpine = Alpine;
 
+Alpine.data('invoiceState', (state, url, token) => ({
+    state, saving: false, error: '',
+    async cycle() {
+        if (this.saving) return;
+        const states = ['In Progress', 'Ready To Invoice', 'Already Invoiced'];
+        const next = states[(states.indexOf(this.state) + 1) % states.length];
+        this.saving = true;
+        this.error = '';
+        try {
+            const response = await fetch(url, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token },
+                body: JSON.stringify({ state: next }),
+            });
+            if (!response.ok) throw new Error('Unable to save');
+            this.state = (await response.json()).state;
+        } catch {
+            this.error = 'Could not save invoice status. Please try again.';
+        } finally {
+            this.saving = false;
+        }
+    },
+}));
+
 Alpine.start();
 
 const leaveDatepickerLocale = {
