@@ -169,7 +169,8 @@
                     <div class="space-y-2">
                         <x-mobile-navigation-link :href="route('admin.leave-requests')" :active="request()->routeIs('admin.leave-requests*')" icon="calendar" label="Leave requests" />
                         <x-mobile-navigation-link :href="route('admin.users')" :active="request()->routeIs('admin.users*')" icon="users" label="User management" />
-                        <x-mobile-navigation-link :href="route('jobs.index')" :active="request()->routeIs('jobs.*', 'job.*', 'invoice.*')" icon="briefcase" label="Jobs" />
+                        <x-mobile-navigation-link :href="route('jobs.index')" :active="request()->routeIs('jobs.index', 'jobs.create', 'jobs.edit', 'invoice.*')" icon="briefcase" label="Jobs" />
+                        <x-mobile-navigation-link :href="route('job.table')" :active="request()->routeIs('job.table')" icon="currency" label="Invoices" />
                     </div>
                 </section>
             @endif
