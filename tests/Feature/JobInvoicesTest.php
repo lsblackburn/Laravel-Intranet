@@ -16,7 +16,7 @@ class JobInvoicesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->actingAs(\App\Models\User::factory()->create());
+        $this->actingAs(\App\Models\User::factory()->create(['role' => 'admin']));
         $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactorForRememberedSession::class);
     }
 
