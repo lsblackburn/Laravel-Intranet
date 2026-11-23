@@ -93,6 +93,31 @@ class JobInvoicesTest extends TestCase
             fn ($states) => $states[$job->id]['March'] === 'Ready To Invoice');
     }
 
+    public function test_table_browses_years_and_preserves_filter_without_highlighting_other_years(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-23'));
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2025, 'month' => 'March', 'amount' => '125.50',
+            'frequency' => 'yearly', 'recurring' => true,
+        ]);
+
+        foreach ([2025, 2027] as $year) {
+            $this->get(route('job.table', ['year' => $year, 'status' => 'all']))
+                ->assertOk()->assertViewHas('year', $year)->assertViewHas('currentMonth', null)
+                ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['March'] === '125.50')
+                ->assertSee(route('job.table', ['year' => $year - 1, 'status' => 'all']))
+                ->assertSee(route('job.table', ['year' => $year + 1, 'status' => 'all']))
+                ->assertSee(route('job.table', ['status' => 'active', 'year' => $year]))
+                ->assertDontSee('aria-current="date"', false);
+        }
+        $this->assertDatabaseCount('invoices', 1);
+        foreach ([1900, 2156, 'invalid'] as $year) {
+            $this->getJson(route('job.table', ['year' => $year]))->assertUnprocessable();
+        }
+    }
+
     private function data(WorkJob $job, int $year): array
     {
         $invoices = app(JobInvoices::class)->ensureYear($job, $year);

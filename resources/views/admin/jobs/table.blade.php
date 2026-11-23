@@ -24,13 +24,24 @@
 
                         @foreach (['all' => 'All Projects', 'active' => 'Active', 'complete' => 'Complete'] as $value => $label)
 
-                            <a href="{{ route('job.table', ['status' => $value]) }}" class="rounded-lg px-4 py-2 text-[13px] text-(--color-subtletext) hover:bg-(--color-surface-alt) aria-[current=page]:bg-(--color-primary) aria-[current=page]:text-(--color-background)" @if ($status === $value) aria-current="page" @endif>{{ $label }}</a>
+                            <a href="{{ route('job.table', ['status' => $value, 'year' => $year]) }}" class="rounded-lg px-4 py-2 text-[13px] text-(--color-subtletext) hover:bg-(--color-surface-alt) aria-[current=page]:bg-(--color-primary) aria-[current=page]:text-(--color-background)" @if ($status === $value) aria-current="page" @endif>{{ $label }}</a>
 
                         @endforeach
 
                     </nav>
 
-                    <span class="rounded-lg border border-(--color-border) px-4 py-2 text-sm">Jan {{ $year }} &ndash; Dec {{ $year }}</span>
+                    <nav aria-label="Invoice year" class="flex flex-wrap items-center gap-2 text-sm">
+                        @if ($year > 1901)
+                            <a href="{{ route('job.table', ['year' => $year - 1, 'status' => $status]) }}" aria-label="Previous year, {{ $year - 1 }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">&larr; {{ $year - 1 }}</a>
+                        @endif
+                        <span class="rounded-lg border border-(--color-border) px-4 py-2 font-semibold">Jan {{ $year }} &ndash; Dec {{ $year }}</span>
+                        @if ($year < 2155)
+                            <a href="{{ route('job.table', ['year' => $year + 1, 'status' => $status]) }}" aria-label="Next year, {{ $year + 1 }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">{{ $year + 1 }} &rarr;</a>
+                        @endif
+                        @if ($year !== now()->year)
+                            <a href="{{ route('job.table', ['status' => $status]) }}" class="rounded-lg px-3 py-2 text-(--color-primary) hover:bg-(--color-surface-alt)">Current year</a>
+                        @endif
+                    </nav>
 
                 </div>
 
@@ -42,7 +53,28 @@
 
                     <div class="rounded-[14px] border border-(--color-border) bg-(--color-card) shadow-(--workspace-shadow) flex items-center gap-4 px-5 py-4">
 
-                        <span aria-hidden="true" class="flex h-11 w-11 items-center justify-center rounded-xl bg-(--color-primary)/10 text-xl text-(--color-primary)">{{ $loop->first ? '£' : ($loop->last ? '↗' : '≡') }}</span>
+                        <span aria-hidden="true" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-(--color-primary)/10 text-(--color-primary)">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                @switch($loop->iteration)
+                                    @case(1)
+                                        <path d="M17 18a2 2 0 0 1-2 2H5a3 3 0 0 0 3-3V8a4 4 0 0 1 8 0" />
+                                        <path d="M6 12h7" />
+                                        @break
+                                    @case(2)
+                                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2" />
+                                        <circle cx="12" cy="7" r="4" />
+                                        @break
+                                    @case(3)
+                                        <path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2" />
+                                        <circle cx="14" cy="15" r="1" />
+                                        @break
+                                    @case(4)
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="m16 9-5.5 5.5L8 12" />
+                                        @break
+                                @endswitch
+                            </svg>
+                        </span>
 
                         <div>
 
@@ -58,7 +90,7 @@
 
             </div>
 
-            <div class="mb-3 flex flex-wrap items-end justify-between gap-3 text-xs text-(--color-subtletext)">
+            <div class="mb-3 px-5 box-border flex flex-wrap items-end justify-between gap-3 text-xs text-(--color-subtletext)">
 
                 <p>Click a monthly amount to cycle its invoice status. Select a project to edit amounts. All amounts in GBP.</p>
 

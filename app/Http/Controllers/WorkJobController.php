@@ -155,11 +155,14 @@ class WorkJobController extends Controller
 
     public function tableView(Request $request): View
     {
-        $request->validate(['status' => ['nullable', 'in:all,active,complete']]);
+        $request->validate([
+            'status' => ['nullable', 'in:all,active,complete'],
+            'year' => ['nullable', 'integer', 'between:1901,2155'],
+        ]);
         $status = $request->input('status', 'all');
         $today = now();
-        $year = $today->year;
-        $currentMonth = $today->format('F');
+        $year = (int) ($request->input('year') ?? $today->year);
+        $currentMonth = $year === $today->year ? $today->format('F') : null;
         $months = JobInvoices::MONTHS;
         $jobs = WorkJob::with('client')
             ->when($status === 'active', fn ($query) => $query->where('active', true)->where('completed', false))
