@@ -22,24 +22,29 @@ Alpine.data('ajaxList', () => ({
         }
         this.load(location.href, false);
     },
+    filterUrl() {
+        const url = new URL(this.$refs.filters.action);
+        url.search = new URLSearchParams(new FormData(this.$refs.filters)).toString();
+        for (const [key, value] of [...url.searchParams]) if (!value) url.searchParams.delete(key);
+        return url;
+    },
     paginate(event) {
         const link = event.target.closest('a');
         if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
         const url = new URL(link.href);
         if (url.origin !== location.origin || url.pathname !== location.pathname || !url.searchParams.has('page')) return;
         event.preventDefault();
-        this.load(url);
+        // Visible links can predate a pending search; use the current controls.
+        const filteredUrl = this.filterUrl();
+        filteredUrl.searchParams.set('page', url.searchParams.get('page'));
+        this.load(filteredUrl);
     },
     async load(target = null, updateHistory = true) {
         clearTimeout(this.timer);
         this.controller?.abort();
         const controller = new AbortController();
         this.controller = controller;
-        const url = new URL(target ?? this.$refs.filters.action);
-        if (!target) {
-            url.search = new URLSearchParams(new FormData(this.$refs.filters)).toString();
-            for (const [key, value] of [...url.searchParams]) if (!value) url.searchParams.delete(key);
-        }
+        const url = target ? new URL(target) : this.filterUrl();
         this.pendingUrl = url.href;
         this.loading = true;
         this.error = false;
