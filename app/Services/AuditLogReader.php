@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 
 class AuditLogReader
 {
-    public function paginate(int $perPage = 30): LengthAwarePaginator
+    public function paginate(int $perPage = 30, string $search = '', ?string $from = null, ?string $to = null): LengthAwarePaginator
     {
         $driver = config('audit-logger.default', 'mysql');
         $settings = config("audit-logger.drivers.{$driver}", []);
@@ -39,6 +39,14 @@ class AuditLogReader
         }
 
         $logs = $connection->query()->fromSub($query, 'audit_entries')
+            ->when($from !== null, fn ($query) => $query->where('created_at', '>=', $from))
+            ->when($to !== null, fn ($query) => $query->where('created_at', '<=', $to))
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('metadata->message', 'like', '%'.$search.'%')
+                        ->orWhere('action', 'like', '%'.$search.'%');
+                });
+            })
             ->orderByDesc('created_at')
             ->orderBy('audit_table')
             ->orderByDesc('id')

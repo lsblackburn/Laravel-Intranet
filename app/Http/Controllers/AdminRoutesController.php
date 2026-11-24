@@ -109,10 +109,17 @@ class AdminRoutesController extends Controller
         return view('admin.config.project-types', compact('types'));
     }
 
-    public function viewAuditLogs(AuditLogReader $auditLogs) {
-        $logs = $auditLogs->paginate(30);
+    public function viewAuditLogs(Request $request, AuditLogReader $auditLogs) {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'from' => ['nullable', 'date_format:Y-m-d\TH:i'],
+            'to' => ['nullable', 'date_format:Y-m-d\TH:i', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
+        ]);
+        $from = empty($validated['from']) ? null : Carbon::createFromFormat('Y-m-d\TH:i', $validated['from'])->startOfMinute()->format('Y-m-d H:i:s');
+        $to = empty($validated['to']) ? null : Carbon::createFromFormat('Y-m-d\TH:i', $validated['to'])->endOfMinute()->format('Y-m-d H:i:s');
+        $logs = $auditLogs->paginate(30, trim($validated['search'] ?? ''), $from, $to);
 
-        return view('admin.audit-logs', compact('logs'));
+        return view($request->ajax() ? 'admin.partials.audit-log-results' : 'admin.audit-logs', compact('logs'));
     }
 
 }
