@@ -28,6 +28,42 @@ class JobInvoicesTest extends TestCase
         return WorkJob::create(['title' => 'Job', 'project_type' => 'Website', 'client_id' => $client->id]);
     }
 
+    public function test_invoice_form_reads_client_before_its_transaction_and_recurrence_rules_after_the_job_lock(): void
+    {
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'March', 'amount' => '125.50',
+            'frequency' => 'yearly', 'recurring' => true,
+        ]);
+        $baseline = \Illuminate\Support\Facades\DB::transactionLevel();
+        $queries = collect();
+        \Illuminate\Support\Facades\DB::listen(function ($query) use ($queries) {
+            $queries->push(['sql' => $query->sql, 'level' => $query->connection->transactionLevel()]);
+        });
+
+        $this->get(route('invoice.form', ['job' => $job, 'year' => 2027]))
+            ->assertOk()
+            ->assertViewHas('invoices', fn ($invoices) => $invoices['March']->amount === '125.50');
+
+        $clientRead = $queries->first(fn ($query) => str_contains($query['sql'], 'from "clients"'));
+        $rulesIndex = $queries->search(fn ($query) => str_contains($query['sql'], 'from "invoices"'));
+        $this->assertNotNull($clientRead);
+        $this->assertNotFalse($rulesIndex);
+        $this->assertSame($baseline, $clientRead['level']);
+        $this->assertSame($baseline + 1, $queries[$rulesIndex]['level']);
+
+        $jobLockRead = $queries->take($rulesIndex)->last(fn ($query) => str_contains($query['sql'], 'from "work_jobs"'));
+        $this->assertNotNull($jobLockRead);
+        $this->assertSame($baseline + 1, $jobLockRead['level']);
+        $inserts = $queries->filter(fn ($query) => str_starts_with($query['sql'], 'insert into "invoices"'));
+        $this->assertCount(12, $inserts);
+        foreach ($inserts as $insert) {
+            // firstOrCreate may add its own savepoint inside the controller transaction.
+            $this->assertGreaterThanOrEqual($baseline + 1, $insert['level']);
+        }
+    }
+
     public function test_invoice_changes_are_audited_and_unchanged_saves_are_skipped(): void
     {
         $job = $this->job();

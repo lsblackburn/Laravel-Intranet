@@ -16,8 +16,9 @@ class AtomicAuditWrites
             return $next($request);
         }
 
-        // The invoice form materializes invoice records; email verification writes on GET.
-        if ($request->isMethodSafe() && ! $request->routeIs('invoice.form', 'verification.verify')) {
+        // The invoice form owns its materialization transaction after locking the job.
+        // Email verification is the only GET that needs this outer audit transaction.
+        if ($request->isMethodSafe() && ! $request->routeIs('verification.verify')) {
             return $next($request);
         }
 
