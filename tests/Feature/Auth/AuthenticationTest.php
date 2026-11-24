@@ -11,6 +11,12 @@ class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \iamfarhad\LaravelAuditLog\Drivers\MySQLDriver::clearCache();
+    }
+
     public function test_login_screen_can_be_rendered(): void
     {
         $response = $this->get('/login');
@@ -41,6 +47,13 @@ class AuthenticationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+        $this->assertDatabaseHas('audit_users_logs', [
+            'entity_id' => (string) $user->id,
+            'causer_id' => (string) $user->id,
+            'action' => 'user_logged_in',
+        ]);
+        $entry = \Illuminate\Support\Facades\DB::table('audit_users_logs')->first();
+        $this->assertSame("{$user->name} has logged in successfully.", json_decode($entry->metadata, true)['message']);
     }
 
     public function test_non_two_factor_login_clears_stale_pending_two_factor_challenge_state(): void
@@ -101,6 +114,9 @@ class AuthenticationTest extends TestCase
         $response = $this->actingAs($user)->post('/logout');
 
         $this->assertGuest();
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'user_logged_out', 'entity_id' => (string) $user->id, 'causer_id' => (string) $user->id,
+        ]);
         $response->assertRedirect('/');
     }
 }

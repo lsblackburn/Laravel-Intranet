@@ -21,6 +21,7 @@ use App\Notifications\LeaveRequestSubmitted;
 use App\Notifications\LeaveRequestSubmittedEmail;
 use App\Services\LeaveAllowanceService;
 use App\Services\LeaveDepartmentAvailabilityService;
+use App\Services\ActivityLogger;
 
 class LeaveController extends Controller
 {
@@ -91,6 +92,16 @@ class LeaveController extends Controller
                 $admin->notify(new LeaveRequestSubmittedEmail($leave));
             });
 
+        $startDate = \Carbon\Carbon::parse($leave->start_date)->format('d/m/Y');
+        $endDate =  \Carbon\Carbon::parse($leave->end_date)->format('d/m/Y');
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $leave,
+            action: 'create_leave_request',
+            description: "submitted a leave request from $startDate to $endDate ",
+        );
+
         return redirect()->route('leave.view')->with('success', 'Leave request created successfully.');
     }
 
@@ -121,7 +132,7 @@ class LeaveController extends Controller
             return redirect()->route('leave.view')->with('error', 'A half day must have the start date equal to the end date');
         }
 
-        DB::transaction(function () use ($validated, $leaveRequest): void {
+        $originalDates = DB::transaction(function () use ($validated, $leaveRequest): array {
             $user = $this->lockedUser((int) Auth::id());
             $lockedLeaveRequest = Leave::query()
                 ->whereKey($leaveRequest->id)
@@ -132,8 +143,27 @@ class LeaveController extends Controller
             $this->leaveAllowance->ensureLeaveRequestFitsAllowance($user, $validated, $lockedLeaveRequest);
             $this->departmentAvailability->ensureDepartmentHasCoverage($user, $validated, $lockedLeaveRequest);
 
+            $originalDates = [
+                'start_date' => $lockedLeaveRequest->start_date,
+                'end_date' => $lockedLeaveRequest->end_date,
+            ];
+
             $lockedLeaveRequest->update($validated);
+
+            return $originalDates;
         });
+
+        $originalStartDate = Carbon::parse($originalDates['start_date'])->format('d/m/Y');
+        $originalEndDate = Carbon::parse($originalDates['end_date'])->format('d/m/Y');
+        $startDate = Carbon::parse($validated['start_date'])->format('d/m/Y');
+        $endDate = Carbon::parse($validated['end_date'])->format('d/m/Y');
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $leaveRequest,
+            action: 'updated_leave_request',
+            description: "modified a leave request from {$originalStartDate} to {$originalEndDate} to the new date range {$startDate} to {$endDate}",
+        );
 
         return redirect()->route('leave.view')->with('success', 'Leave request updated successfully.');
     }
@@ -235,6 +265,16 @@ class LeaveController extends Controller
         // Keep the database notification synchronous, but send the email variant through the queue.
         $leaveRequest->user->notify(new LeaveRequestResponded($leaveRequest));
         $leaveRequest->user->notify(new LeaveRequestRespondedEmail($leaveRequest));
+
+        $startDate =  \Carbon\Carbon::parse($leaveRequest->start_date)->format('d/m/Y');
+        $endDate = \Carbon\Carbon::parse($leaveRequest->end_date)->format('d/m/Y');
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $leaveRequest,
+            action: 'leave_request_response',
+            description: "{$responseAction} the leave request for {$leaveRequest->user->name} from {$startDate} to {$endDate}",
+        );
 
         return redirect()->route('admin.leave-requests')->with('success', "Leave request {$responseAction} successfully.");
     }
@@ -392,7 +432,7 @@ class LeaveController extends Controller
             ->firstOrFail();
     }
 
-    public function delete(Leave $leave)
+    public function delete(Request $request, Leave $leave)
     {
         if ($leave->user_id !== Auth::id()) {
             abort(403, 'Unauthorised action.');
@@ -403,6 +443,16 @@ class LeaveController extends Controller
         }
 
         $leave->delete();
+
+        $startDate = \Carbon\Carbon::parse($leave->start_date)->format('d/m/Y');
+        $endDate = \Carbon\Carbon::parse($leave->end_date)->format('d/m/Y');
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $leave,
+            action: 'delete_leave_request',
+            description: "deleted a $leave->status leave request with a start date of $startDate and an end date of $endDate",
+        );
 
         return redirect()->route('leave.view')->with('success', 'Leave request cancelled successfully.');
     }
@@ -438,7 +488,21 @@ class LeaveController extends Controller
         $validated['leave_refresh_month'] = (int) $validated['leave_refresh_month'];
         $validated['leave_refresh_day'] = (int) $validated['leave_refresh_day'];
 
+        $changed = (int) $leave->leave_refresh_month !== $validated['leave_refresh_month']
+            || (int) $leave->leave_refresh_day !== $validated['leave_refresh_day'];
+        $originalDate = Carbon::create(2024, (int) $leave->leave_refresh_month, (int) $leave->leave_refresh_day)->format('j F');
+        $newDate = Carbon::create(2024, $validated['leave_refresh_month'], $validated['leave_refresh_day'])->format('j F');
+
         $leave->update($validated);
+
+        if ($changed) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $leave,
+                action: 'update_leave_refresh',
+                description: "changed the annual leave refresh date from {$originalDate} to {$newDate}",
+            );
+        }
 
         return redirect()->route('admin.view-leave-rules')->with('success', 'Leave refresh dates have updated successfully.');
     }
@@ -463,7 +527,32 @@ class LeaveController extends Controller
         $validated['increase_by_days'] = (float) $validated['increase_by_days'];
         $validated['maximum_allowance'] = (float) $validated['maximum_allowance'];
 
+        $changes = [];
+        $fields = [
+            'base_allowance' => ['base allowance', 'days'],
+            'increase_after_years' => ['service threshold for allowance increases', 'years'],
+            'increase_by_days' => ['allowance increase', 'days'],
+            'maximum_allowance' => ['maximum allowance', 'days'],
+        ];
+
+        foreach ($fields as $field => [$label, $unit]) {
+            if ((float) $leave->{$field} !== (float) $validated[$field]) {
+                $oldValue = (float) $leave->{$field};
+                $newValue = $validated[$field];
+                $changes[] = "{$label} from {$oldValue} to {$newValue} {$unit}";
+            }
+        }
+
         $leave->update($validated);
+
+        if ($changes !== []) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $leave,
+                action: 'update_leave_allowance',
+                description: 'updated leave allowance settings: '.implode('; ', $changes),
+            );
+        }
 
         return redirect()->route('admin.view-leave-rules')->with('success', 'Leave allowance settings have updated successfully.');
     }
@@ -481,10 +570,32 @@ class LeaveController extends Controller
 
         $activeWorkDayIds = collect($validated['work_days'])->map(fn ($id) => (int) $id);
 
-        WorkDay::query()->update(['active' => false]);
-        WorkDay::query()
-            ->whereIn('id', $activeWorkDayIds)
-            ->update(['active' => true]);
+        $changedDays = DB::transaction(function () use ($activeWorkDayIds) {
+            $days = WorkDay::query()->lockForUpdate()->get();
+            $changedDays = collect();
+
+            foreach ($days as $day) {
+                $active = $activeWorkDayIds->contains((int) $day->id);
+
+                if ($day->active === $active) {
+                    continue;
+                }
+
+                $day->update(['active' => $active]);
+                $changedDays->push($day);
+            }
+
+            return $changedDays;
+        });
+
+        foreach ($changedDays as $day) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $day,
+                action: 'update_work_day',
+                description: ($day->active ? 'enabled' : 'disabled')." {$day->day} as a working day",
+            );
+        }
 
         return redirect()->route('admin.view-leave-rules')->with('success', 'Working days updated successfully.');
     }

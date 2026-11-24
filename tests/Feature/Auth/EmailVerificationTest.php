@@ -48,6 +48,9 @@ class EmailVerificationTest extends TestCase
         $response = $this->actingAs($user)->get($verificationUrl);
 
         Event::assertDispatched(Verified::class);
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'email_verified', 'entity_id' => (string) $user->id, 'causer_id' => (string) $user->id,
+        ]);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
         $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
     }

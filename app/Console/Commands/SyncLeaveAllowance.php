@@ -38,9 +38,22 @@ class SyncLeaveAllowance extends Command
         User::query()->chunk(100, function ($users) {
             foreach ($users as $user) {
                 // Sync all users leave allowance on the refresh date
-                $user->update([
-                    'leave_allowance' => $user->calculateLeaveAllowance(),
-                ]);
+                \Illuminate\Support\Facades\DB::transaction(function () use ($user) {
+                    $user = User::whereKey($user->id)->lockForUpdate()->firstOrFail();
+                    $previous = (float) $user->leave_allowance;
+                    $allowance = $user->calculateLeaveAllowance();
+                    if ($previous === (float) $allowance) {
+                        return;
+                    }
+                    $user->update(['leave_allowance' => $allowance]);
+                    app(\App\Services\ActivityLogger::class)->record(
+                        actor: null,
+                        subject: $user,
+                        action: 'leave_allowance_synced',
+                        description: "updated the leave allowance for {$user->name} from {$previous} to {$allowance} days during the annual refresh",
+                        metadata: ['system' => true],
+                    );
+                });
             }
         });
 

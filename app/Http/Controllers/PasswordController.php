@@ -8,6 +8,7 @@ use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
 use App\Models\Password;
 use App\Models\Client;
+use App\Services\ActivityLogger;
 
 class PasswordController extends Controller
 {
@@ -71,7 +72,14 @@ class PasswordController extends Controller
         // Function to store a newly created password in the database
         $data = $this->validatedData($request);
 
-        Password::create($data);
+        $password = Password::create($data);
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $password,
+            action: 'password_created',
+            description: "created password for {$password->client->name}",
+        );
 
         return redirect()->route('passwords.index')->with('success', 'Password created successfully.');
     }
@@ -102,13 +110,27 @@ class PasswordController extends Controller
 
         $password->update($data);
 
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $password,
+            action: 'password_updated',
+            description: "updated password for {$password->client->name}",
+        );
+
         return redirect()->route('passwords.index')->with('success', 'Password updated successfully.');
     }
 
-    public function destroy(Password $password): RedirectResponse
+    public function destroy(Request $request, Password $password): RedirectResponse
     {
         // Function to delete a password and its associated data from the database
         DB::transaction(fn () => $password->delete());
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $password,
+            action: 'password_deleted',
+            description: "deleted a password for {$password->client->name}",
+        );
 
         return to_route('passwords.index')->with('success', 'Password was deleted successfully.');
     }

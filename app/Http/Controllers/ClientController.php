@@ -10,6 +10,7 @@ use App\Models\Client;
 use App\Models\WorkJob;
 use App\Models\Invoice;
 use Illuminate\Validation\Rule;
+use App\Services\ActivityLogger;
 
 class ClientController extends Controller
 {
@@ -44,7 +45,14 @@ class ClientController extends Controller
         // Function to store a newly created client in the database
         $data = $this->validatedData($request);
 
-        Client::create($data);
+        $createdClient = Client::create($data);
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $createdClient,
+            action: 'create_client',
+            description: "created a client called $createdClient->name",
+        );
 
         $client = Client::where('name', $data['name'])->first();
 
@@ -96,32 +104,74 @@ class ClientController extends Controller
             'contacts.*.notes' => ['nullable', 'string', 'max:65535'],
         ]);
 
-        DB::transaction(function () use ($client, $data) {
+        $auditEvents = [];
+
+        DB::transaction(function () use ($client, $data, &$auditEvents) {
+            $originalName = $client->name;
             $client->update(['name' => $data['name']]);
+            if ($originalName !== $client->name) {
+                $auditEvents[] = [
+                    'action' => 'rename_client',
+                    'description' => "renamed client {$originalName} to {$client->name}",
+                ];
+            }
 
             if (! isset($data['contacts_present']) && ! array_key_exists('contacts', $data)) {
                 return;
             }
 
             $contacts = collect($data['contacts'] ?? []);
-            $client->contacts()->whereNotIn('id', $contacts->pluck('id')->filter()->all())->delete();
+            $removedContacts = $client->contacts()
+                ->whereNotIn('id', $contacts->pluck('id')->filter()->all())->get();
+
+            foreach ($removedContacts as $removedContact) {
+                $removedContact->delete();
+                $auditEvents[] = [
+                    'action' => 'remove_client_contact',
+                    'description' => "removed contact {$removedContact->name} from {$client->name}",
+                ];
+            }
 
             foreach ($contacts as $contact) {
                 $id = $contact['id'] ?? null;
                 unset($contact['id']);
 
                 if ($id) {
-                    $client->contacts()->findOrFail($id)->update($contact);
+                    $existingContact = $client->contacts()->findOrFail($id);
+                    $existingContact->fill($contact);
+                    $changedFields = array_keys($existingContact->getDirty());
+
+                    if ($changedFields !== []) {
+                        $existingContact->save();
+                        $auditEvents[] = [
+                            'action' => 'update_client_contact',
+                            'description' => "updated contact details for {$existingContact->name} at {$client->name} (changed: "
+                                .implode(', ', $changedFields).')',
+                        ];
+                    }
                 } else {
-                    $client->contacts()->create($contact);
+                    $createdContact = $client->contacts()->create($contact);
+                    $auditEvents[] = [
+                        'action' => 'add_client_contact',
+                        'description' => "added contact {$createdContact->name} to {$client->name}",
+                    ];
                 }
             }
         });
 
+        foreach ($auditEvents as $event) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $client,
+                action: $event['action'],
+                description: $event['description'],
+            );
+        }
+
         return redirect()->route('clients.index')->with('success', 'Client updated successfully.');
     }
 
-    public function destroy(Client $client): RedirectResponse
+    public function destroy(Request $request, Client $client): RedirectResponse
     {
         DB::transaction(function () use ($client) {
             $client = Client::whereKey($client->id)->lockForUpdate()->firstOrFail();
@@ -132,6 +182,13 @@ class ClientController extends Controller
             WorkJob::whereIn('id', $jobs->modelKeys())->delete();
             $client->delete();
         });
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $client,
+            action: 'delete_client',
+            description: "deleted a client called $client->name, and their associated jobs, invoices, contacts, and credentials",
+        );
 
         return to_route('clients.index')->with('success', 'Client, associated jobs, invoices, contacts and credentials were deleted successfully.');
     }

@@ -29,6 +29,9 @@ class PasswordUpdateTest extends TestCase
             ->assertRedirect('/profile');
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'account_password_updated', 'entity_id' => (string) $user->id, 'causer_id' => (string) $user->id,
+        ]);
     }
 
     public function test_correct_password_must_be_provided_to_update_password(): void
@@ -67,6 +70,9 @@ class PasswordUpdateTest extends TestCase
             ->assertRedirect(route('admin.users.edit', $user));
 
         $this->assertTrue(Hash::check('new-password', $user->refresh()->password));
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'account_password_updated', 'entity_id' => (string) $user->id, 'causer_id' => (string) $admin->id,
+        ]);
     }
 
     public function test_admin_cannot_update_their_own_password_through_admin_route(): void

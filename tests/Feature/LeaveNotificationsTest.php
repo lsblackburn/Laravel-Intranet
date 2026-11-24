@@ -56,6 +56,16 @@ class LeaveNotificationsTest extends TestCase
             'is_half_day' => false,
         ]);
 
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) use ($admin, $employee, $leave, $leaveDate) {
+            $date = Carbon::parse($leaveDate)->format('d/m/Y');
+            $mock->shouldReceive('record')->once()->withArgs(
+                fn ($actor, $subject, $action, $description) => $actor->is($admin)
+                    && $subject->is($leave)
+                    && $action === 'leave_request_response'
+                    && $description === "approved the leave request for {$employee->name} from {$date} to {$date}"
+            );
+        });
+
         $response = $this
             ->actingAs($admin)
             ->post(route('admin.leave-requests.response', $leave), [

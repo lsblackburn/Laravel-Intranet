@@ -17,7 +17,7 @@
                 'href' => route('admin.view-project-types'),
             ],
         ];
-    @endphp
+    @endphp 
 
     <x-slot name="header">
         <h1 class="text-3xl font-semibold leading-tight tracking-tight text-(--color-text) sm:text-4xl">

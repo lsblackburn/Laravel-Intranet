@@ -32,6 +32,13 @@ class PasswordController extends Controller
             'password' => Hash::make($validated['password']),
         ]);
 
+        app(\App\Services\ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $targetUser,
+            action: 'account_password_updated',
+            description: $user ? "updated the account password for {$targetUser->name}" : 'updated their password',
+        );
+
         if ($user) {
             return redirect()->route('admin.users.edit', $targetUser)->with('success', 'Password updated successfully.');
         }

@@ -35,6 +35,7 @@
                             ['route' => 'admin.users', 'label' => 'User Management', 'description' => 'Manage your team'],
                             ['route' => 'jobs.index', 'label' => 'Jobs', 'description' => 'Projects and invoices'],
                             ['route' => 'job.table', 'label' => 'Invoice Table', 'description' => 'View the invoice table'],
+                            ['route' => 'admin.view-audit-logs', 'label' => 'Audit Logs', 'description' => 'View audit logs'],
                         ]" />
                     @endif
                 </div>

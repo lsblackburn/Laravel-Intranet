@@ -18,7 +18,6 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): View
     {
-
         $departments = UserDepartment::orderBy('department', 'asc')->get();
 
         return view('profile.edit', [
@@ -32,13 +31,24 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
+        $actor = clone $request->user();
         $request->user()->fill($request->validated());
+        $changedFields = array_keys($request->user()->getDirty());
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
         }
 
         $request->user()->save();
+
+        if ($changedFields !== []) {
+            app(\App\Services\ActivityLogger::class)->record(
+                actor: $actor,
+                subject: $request->user(),
+                action: 'profile_updated',
+                description: 'updated their profile (changed: '.implode(', ', $changedFields).')',
+            );
+        }
 
         return Redirect::route('profile.edit')->with('success', 'Profile information updated successfully');
     }
@@ -58,11 +68,20 @@ class ProfileController extends Controller
             'password' => ['required', 'current_password'],
         ]);
 
-        if ($targetUser->id === $request->user()->id) {
+        $actor = clone $request->user();
+        $targetName = $targetUser->name;
+        $targetUser->delete();
+
+        app(\App\Services\ActivityLogger::class)->record(
+            actor: $actor,
+            subject: $targetUser,
+            action: 'user_deleted',
+            description: $user ? "deleted the user account for {$targetName}" : 'deleted their account',
+        );
+
+        if ($targetUser->id === $actor->id) {
             Auth::logout();
         }
-
-        $targetUser->delete();
 
         if ($user) {
             return redirect()->route('admin.users')->with('success', 'User deleted successfully.');

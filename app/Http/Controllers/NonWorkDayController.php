@@ -6,6 +6,7 @@ use App\Models\NonWorkDay;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use App\Services\ActivityLogger;
 
 class NonWorkDayController extends Controller
 {
@@ -26,16 +27,34 @@ class NonWorkDayController extends Controller
             ]);
         }
 
-        NonWorkDay::create($validated);
+        $nonWorkDay = NonWorkDay::create($validated);
+
+        $formattedDate = \Carbon\Carbon::parse($nonWorkDay->date)->format('d/m/Y');
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $nonWorkDay,
+            action: 'non_work_day_created',
+            description: "created a non-workday for $formattedDate with the name $nonWorkDay->name",
+        );
 
         return redirect()
             ->route('admin.view-leave-rules')
             ->with('success', 'Non-work day added successfully.');
     }
 
-    public function destroy(NonWorkDay $nonWorkDay)
+    public function destroy(Request $request, NonWorkDay $nonWorkDay)
     {
         $nonWorkDay->delete();
+
+        $formattedDate = \Carbon\Carbon::parse($nonWorkDay->date)->format('d/m/Y');
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $nonWorkDay,
+            action: 'non_work_day_deleted',
+            description: "removed a non-workday for $formattedDate with the name $nonWorkDay->name",
+        );
 
         return redirect()
             ->route('admin.view-leave-rules')

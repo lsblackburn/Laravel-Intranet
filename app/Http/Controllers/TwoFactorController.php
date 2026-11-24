@@ -14,6 +14,7 @@ use BaconQrCode\Renderer\Image\SvgImageBackEnd;
 use BaconQrCode\Renderer\RendererStyle\RendererStyle;
 use BaconQrCode\Writer;
 use PragmaRX\Google2FA\Google2FA;
+use App\Services\ActivityLogger;
 
 class TwoFactorController extends Controller
 {
@@ -27,7 +28,7 @@ class TwoFactorController extends Controller
         return view('auth.2fa_verify');
     }
 
-    public function verify(Request $request)
+    public function verify(Request $request, User $user)
     {
         $request->validate([
             'one_time_password' => 'required|digits:6',
@@ -54,6 +55,13 @@ class TwoFactorController extends Controller
         if (! $otpValid) {
             RateLimiter::hit($this->otpThrottleKey($request, $user));
 
+            app(ActivityLogger::class)->record(
+                actor: null,
+                subject: $user,
+                action: '2fa_failure',
+                description: "failed two-factor authentication for {$user->name}",
+            );
+
             return back()->withErrors([
                 'one_time_password' => 'Invalid OTP. Please try again.',
             ]);
@@ -69,10 +77,17 @@ class TwoFactorController extends Controller
         $request->session()->forget(['2fa:user_id', '2fa:remember']);
         $request->session()->regenerate();
 
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $user,
+            action: 'user_logged_in',
+            description: 'logged in successfully using two-factor authentication',
+        );
+
         return redirect()->intended(route('dashboard'))->with('success', 'You are now logged in!');
     }
 
-    public function setup()
+    public function setup(Request $request, User $user)
     {
         $google2fa = new Google2FA();
 
@@ -124,6 +139,13 @@ class TwoFactorController extends Controller
             $user->save();
             $request->session()->forget('2fa_secret');
 
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $user,
+                action: '2fa_setup',
+                description: 'enabled two-factor authentication',
+            );
+
             return redirect()->route('dashboard')->with('success', '2FA enabled successfully!');
         }
 
@@ -141,7 +163,7 @@ class TwoFactorController extends Controller
         return view('auth.2fa_disable');
     }
 
-    public function disable(Request $request)
+    public function disable(Request $request, User $user)
     {
         $request->validate([
             'otp' => 'required|digits:6',
@@ -166,6 +188,12 @@ class TwoFactorController extends Controller
 
         session()->forget('google2fa_passed');
 
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $user,
+            action: '2fa_disable',
+            description: 'disabled two-factor authentication',
+        );
 
         return redirect()->route('dashboard')->with('success', '2FA has been disabled.');
     }
@@ -180,6 +208,13 @@ class TwoFactorController extends Controller
         }
 
         event(new Lockout($request));
+
+        app(ActivityLogger::class)->record(
+            actor: null,
+            subject: $user,
+            action: '2fa_throttled',
+            description: "been blocked from attempting two-factor authentication for {$user->name} due to too many attempts",
+        );
 
         $seconds = RateLimiter::availableIn($this->otpThrottleKey($request, $user));
 

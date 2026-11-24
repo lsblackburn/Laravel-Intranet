@@ -76,7 +76,7 @@ return [
     | created for new entity types when they are first logged.
     |
     */
-    'auto_migration' => env('AUDIT_AUTO_MIGRATION', true),
+    'auto_migration' => false, // Audit tables are provisioned by migrations, outside request transactions.
 
     /*
     |--------------------------------------------------------------------------

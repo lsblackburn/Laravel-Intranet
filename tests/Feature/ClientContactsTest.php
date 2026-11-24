@@ -11,6 +11,13 @@ class ClientContactsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        \iamfarhad\LaravelAuditLog\Drivers\MySQLDriver::clearCache();
+    }
+
     public function test_client_deletion_removes_jobs_and_invoices_after_showing_confirmation_warning(): void
     {
         $this->actingAs(User::factory()->create());
@@ -47,6 +54,32 @@ class ClientContactsTest extends TestCase
     private function contact(string $email = 'contact@example.com'): array
     {
         return ['name' => 'Jane Smith', 'role' => 'Manager', 'email' => $email, 'phone' => '0123456789', 'notes' => 'Main contact'];
+    }
+
+    public function test_contact_audits_describe_changes_and_skip_unchanged_contacts(): void
+    {
+        $client = Client::create(['name' => 'Acme']);
+        $contact = $client->contacts()->create($this->contact());
+        $user = User::factory()->create();
+        $this->actingAs($user);
+
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) use ($client, $user) {
+            $mock->shouldReceive('record')->once()->withArgs(
+                fn ($actor, $subject, $action, $description) => $actor->is($user)
+                    && $subject->is($client)
+                    && $action === 'update_client_contact'
+                    && $description === 'updated contact details for Jane Smith at Acme (changed: phone)'
+            );
+        });
+
+        $payload = [
+            'name' => 'Acme',
+            'contacts_present' => '1',
+            'contacts' => [array_merge($this->contact(), ['id' => $contact->id, 'phone' => '0987654321'])],
+        ];
+
+        $this->put(route('clients.update', $client), $payload)->assertSessionHasNoErrors()->assertRedirect();
+        $this->put(route('clients.update', $client), $payload)->assertSessionHasNoErrors()->assertRedirect();
     }
 
     public function test_contacts_are_available_only_on_the_edit_form(): void

@@ -48,7 +48,14 @@ class NewPasswordController extends Controller
                     'remember_token' => Str::random(60),
                 ])->save();
 
-                event(new PasswordReset($user));
+                app(\App\Services\ActivityLogger::class)->record(
+                    actor: $user,
+                    subject: $user,
+                    action: 'account_password_reset',
+                    description: 'reset their password using a password reset link',
+                );
+
+                \Illuminate\Support\Facades\DB::afterCommit(fn () => event(new PasswordReset($user)));
             }
         );
 

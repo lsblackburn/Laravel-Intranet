@@ -16,6 +16,34 @@ class TwoFactorAuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        \iamfarhad\LaravelAuditLog\Drivers\MySQLDriver::clearCache();
+    }
+
+    public function test_login_is_audited_only_after_successful_otp_verification(): void
+    {
+        $user = $this->createUserWithTwoFactorSecret();
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) use ($user) {
+            $mock->shouldReceive('record')->once()->withArgs(
+                fn ($actor, $subject, $action, $description) => $actor->is($user)
+                    && $subject->is($user)
+                    && $action === 'user_logged_in'
+                    && $description === 'logged in successfully using two-factor authentication'
+            );
+        });
+
+        $this->post(route('login'), ['email' => $user->email, 'password' => 'password'])
+            ->assertRedirect(route('2fa.verify'));
+        $this->assertGuest();
+
+        $this->post(route('2fa'), [
+            'one_time_password' => (new Google2FA())->getCurrentOtp($user->google2fa_secret),
+        ])->assertRedirect(route('dashboard'));
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_users_with_two_factor_enabled_are_sent_to_the_otp_challenge_after_password_login(): void
     {
         $user = $this->createUserWithTwoFactorSecret();

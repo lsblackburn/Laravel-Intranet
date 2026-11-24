@@ -58,7 +58,14 @@ class RegisteredUserController extends Controller
             'colour' => $request->input('colour') ?: User::generateUniqueColour(),
         ]);
 
-        event(new Registered($user));
+        app(\App\Services\ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $user,
+            action: 'user_created',
+            description: "created a user account for {$user->name}",
+        );
+
+        \Illuminate\Support\Facades\DB::afterCommit(fn () => event(new Registered($user)));
 
         return redirect()->route('admin.users')->with('success', 'User created successfully.');
     }

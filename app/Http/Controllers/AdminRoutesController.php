@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Services\AuditLogReader;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\LeaveSetting;
@@ -106,6 +107,12 @@ class AdminRoutesController extends Controller
         $types = ProjectType::orderBy('name', 'asc')->paginate(30);
 
         return view('admin.config.project-types', compact('types'));
+    }
+
+    public function viewAuditLogs(AuditLogReader $auditLogs) {
+        $logs = $auditLogs->paginate(30);
+
+        return view('admin.audit-logs', compact('logs'));
     }
 
 }

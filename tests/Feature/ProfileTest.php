@@ -42,6 +42,9 @@ class ProfileTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'profile_updated', 'entity_id' => (string) $user->id, 'causer_id' => (string) $user->id,
+        ]);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void

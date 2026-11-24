@@ -67,6 +67,13 @@ class PasswordResetTest extends TestCase
                 ->assertSessionHasNoErrors()
                 ->assertRedirect(route('login'));
 
+            $this->assertDatabaseHas('audit_users_logs', [
+                'action' => 'account_password_reset', 'entity_id' => (string) $user->id, 'causer_id' => (string) $user->id,
+            ]);
+            $entry = \Illuminate\Support\Facades\DB::table('audit_users_logs')->where('action', 'account_password_reset')->first();
+            $this->assertStringNotContainsString($notification->token, $entry->metadata);
+            $this->assertSame('[]', $entry->new_values);
+
             return true;
         });
     }
