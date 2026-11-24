@@ -17,6 +17,71 @@ class LeaveNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_approval_preliminary_lookup_precedes_the_locking_transaction_and_audit_is_inside_it(): void
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $employee = User::factory()->create(['role' => 'employee', 'leave_allowance' => 20]);
+        $leaveDate = Carbon::now()->addMonth()->toDateString();
+        $leave = Leave::create([
+            'user_id' => $employee->id, 'start_date' => $leaveDate, 'end_date' => $leaveDate,
+            'reason' => 'Annual leave', 'is_half_day' => false,
+        ]);
+        $baseline = \Illuminate\Support\Facades\DB::transactionLevel();
+        $reads = [];
+        $readsAtAudit = [];
+        \Illuminate\Support\Facades\DB::listen(function ($query) use (&$reads) {
+            if (str_starts_with(strtolower($query->sql), 'select') && str_contains($query->sql, '"leaves"')) {
+                $reads[] = $query->connection->transactionLevel();
+            }
+        });
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) use ($baseline, &$reads, &$readsAtAudit) {
+            $mock->shouldReceive('record')->once()->andReturnUsing(function () use ($baseline, &$reads, &$readsAtAudit) {
+                $this->assertSame($baseline + 1, \Illuminate\Support\Facades\DB::transactionLevel());
+                $readsAtAudit = $reads;
+            });
+        });
+
+        $this->actingAs($admin)->post(route('admin.leave-requests.response', $leave), ['response' => 'approved'])
+            ->assertRedirect(route('admin.leave-requests'))->assertSessionHasNoErrors();
+
+        $this->assertGreaterThan(1, count($readsAtAudit));
+        $this->assertSame($baseline, $readsAtAudit[0]);
+        foreach (array_slice($readsAtAudit, 1) as $level) {
+            $this->assertSame($baseline + 1, $level);
+        }
+        $this->assertSame('approved', $leave->fresh()->status);
+    }
+
+    public function test_approval_and_notifications_roll_back_when_its_audit_write_fails(): void
+    {
+        config(['queue.default' => 'sync', 'queue.connections.sync.after_commit' => false]);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $employee = User::factory()->create(['role' => 'employee', 'leave_allowance' => 20]);
+        $leaveDate = Carbon::now()->addMonth()->toDateString();
+        $leave = Leave::create([
+            'user_id' => $employee->id, 'start_date' => $leaveDate, 'end_date' => $leaveDate,
+            'reason' => 'Annual leave', 'is_half_day' => false,
+        ]);
+        $mailSent = false;
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSending::class,
+            function ($event) use (&$mailSent) {
+                if ($event->channel === 'mail') {
+                    $mailSent = true;
+                }
+            });
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) {
+            $mock->shouldReceive('record')->once()->andThrow(new \RuntimeException('Audit unavailable'));
+        });
+
+        $this->actingAs($admin)->post(route('admin.leave-requests.response', $leave), ['response' => 'approved'])
+            ->assertStatus(500);
+
+        $this->assertSame('pending', $leave->fresh()->status);
+        $this->assertDatabaseCount('notifications', 0);
+        $this->assertDatabaseCount('audit_leaves_logs', 0);
+        $this->assertFalse($mailSent);
+    }
+
     public function test_both_leave_emails_wait_for_the_outermost_transaction_even_when_queue_after_commit_is_false(): void
     {
         config(['queue.default' => 'sync', 'queue.connections.sync.after_commit' => false]);

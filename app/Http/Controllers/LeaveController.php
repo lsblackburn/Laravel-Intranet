@@ -190,7 +190,9 @@ class LeaveController extends Controller
 
         $responseAction = $request->input('response');
 
-        $result = DB::transaction(function () use ($leaveRequest, $validated, $responseAction): array {
+        // Acquire the employee lock before the first consistent read in this transaction.
+        // The audit middleware leaves this route's transaction boundary to the controller.
+        $result = DB::transaction(function () use ($request, $leaveRequest, $validated, $responseAction): array {
             $user = $this->lockedUser((int) $leaveRequest->user_id);
             $lockedLeaveRequest = Leave::with('user')
                 ->whereKey($leaveRequest->id)
@@ -241,7 +243,22 @@ class LeaveController extends Controller
             $lockedLeaveRequest->status = $responseAction;
             $lockedLeaveRequest->save();
 
-            return ['error' => null, 'leave' => $lockedLeaveRequest->fresh('user')];
+            $updatedLeave = $lockedLeaveRequest->fresh('user');
+            $startDate = Carbon::parse($updatedLeave->start_date)->format('d/m/Y');
+            $endDate = Carbon::parse($updatedLeave->end_date)->format('d/m/Y');
+
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $updatedLeave,
+                action: 'leave_request_response',
+                description: "{$responseAction} the leave request for {$updatedLeave->user->name} from {$startDate} to {$endDate}",
+            );
+
+            $updatedLeave->user->notify(new LeaveRequestResponded($updatedLeave));
+            // This mail variant waits for this transaction to commit.
+            $updatedLeave->user->notify(new LeaveRequestRespondedEmail($updatedLeave));
+
+            return ['error' => null, 'leave' => $updatedLeave];
         });
 
         if ($result['error'] === 'processed') {
@@ -259,22 +276,6 @@ class LeaveController extends Controller
         if ($result['error'] === 'coverage') {
             return redirect()->route('admin.leave-requests')->with('error', 'This leave request would leave the employee\'s department without cover.');
         }
-
-        $leaveRequest = $result['leave'];
-
-        // Keep the database notification synchronous, but send the email variant through the queue.
-        $leaveRequest->user->notify(new LeaveRequestResponded($leaveRequest));
-        $leaveRequest->user->notify(new LeaveRequestRespondedEmail($leaveRequest));
-
-        $startDate =  \Carbon\Carbon::parse($leaveRequest->start_date)->format('d/m/Y');
-        $endDate = \Carbon\Carbon::parse($leaveRequest->end_date)->format('d/m/Y');
-
-        app(ActivityLogger::class)->record(
-            actor: $request->user(),
-            subject: $leaveRequest,
-            action: 'leave_request_response',
-            description: "{$responseAction} the leave request for {$leaveRequest->user->name} from {$startDate} to {$endDate}",
-        );
 
         return redirect()->route('admin.leave-requests')->with('success', "Leave request {$responseAction} successfully.");
     }

@@ -10,6 +10,12 @@ class AtomicAuditWrites
 {
     public function handle(Request $request, Closure $next)
     {
+        // Approval owns its transaction: preliminary reads must precede the employee lock transaction.
+        // Under MySQL REPEATABLE READ an outer transaction would pin validation to a stale snapshot.
+        if ($request->routeIs('admin.leave-requests.response')) {
+            return $next($request);
+        }
+
         // The invoice form materializes invoice records; email verification writes on GET.
         if ($request->isMethodSafe() && ! $request->routeIs('invoice.form', 'verification.verify')) {
             return $next($request);
