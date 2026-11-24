@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 
+use App\Services\AuditLogReader;
 use App\Models\Leave;
 use App\Models\User;
 use App\Models\LeaveSetting;
@@ -106,6 +107,19 @@ class AdminRoutesController extends Controller
         $types = ProjectType::orderBy('name', 'asc')->paginate(30);
 
         return view('admin.config.project-types', compact('types'));
+    }
+
+    public function viewAuditLogs(Request $request, AuditLogReader $auditLogs) {
+        $validated = $request->validate([
+            'search' => ['nullable', 'string', 'max:255'],
+            'from' => ['nullable', 'date_format:Y-m-d\TH:i'],
+            'to' => ['nullable', 'date_format:Y-m-d\TH:i', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
+        ]);
+        $from = empty($validated['from']) ? null : Carbon::createFromFormat('Y-m-d\TH:i', $validated['from'])->startOfMinute()->format('Y-m-d H:i:s');
+        $to = empty($validated['to']) ? null : Carbon::createFromFormat('Y-m-d\TH:i', $validated['to'])->endOfMinute()->format('Y-m-d H:i:s');
+        $logs = $auditLogs->paginate(30, trim($validated['search'] ?? ''), $from, $to);
+
+        return view($request->ajax() ? 'admin.partials.audit-log-results' : 'admin.audit-logs', compact('logs'));
     }
 
 }

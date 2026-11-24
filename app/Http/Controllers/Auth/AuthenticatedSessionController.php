@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use App\Models\User;
+use App\Services\ActivityLogger;
 
 class AuthenticatedSessionController extends Controller
 {
@@ -47,6 +48,13 @@ class AuthenticatedSessionController extends Controller
         $request->session()->regenerate();
 
         // No 2FA required normal login
+        app(ActivityLogger::class)->record(
+            actor: $user,
+            subject: $user,
+            action: 'user_logged_in',
+            description: 'logged in successfully',
+        );
+
         return redirect()->intended(route('dashboard', absolute: false))->with('success', 'You are now logged in!');
     }
 
@@ -55,6 +63,14 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        app(ActivityLogger::class)->record(
+            actor: $user,
+            subject: $user,
+            action: 'user_logged_out',
+            description: 'logged out',
+        );
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();

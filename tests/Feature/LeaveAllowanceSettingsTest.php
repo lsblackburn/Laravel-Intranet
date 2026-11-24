@@ -11,6 +11,40 @@ class LeaveAllowanceSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        \iamfarhad\LaravelAuditLog\Drivers\MySQLDriver::clearCache();
+    }
+
+    public function test_allowance_audit_lists_only_changed_settings_and_skips_unchanged_saves(): void
+    {
+        $settings = LeaveSetting::firstOrFail();
+        $settings->update([
+            'base_allowance' => 20, 'increase_after_years' => 2,
+            'increase_by_days' => 1, 'maximum_allowance' => 30,
+        ]);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) use ($admin, $settings) {
+            $mock->shouldReceive('record')->once()->withArgs(
+                fn ($actor, $subject, $action, $description) => $actor->is($admin)
+                    && $subject->is($settings)
+                    && $action === 'update_leave_allowance'
+                    && $description === 'updated leave allowance settings: base allowance from 20 to 22.5 days; service threshold for allowance increases from 2 to 3 years'
+            );
+        });
+
+        $payload = [
+            'base_allowance' => 22.5, 'increase_after_years' => 3,
+            'increase_by_days' => 1, 'maximum_allowance' => 30,
+        ];
+
+        $this->patch(route('admin.leave-allowance.update'), $payload)->assertSessionHasNoErrors()->assertRedirect();
+        $this->patch(route('admin.leave-allowance.update'), $payload)->assertSessionHasNoErrors()->assertRedirect();
+    }
+
     public function test_admin_can_save_numeric_allowance_settings(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

@@ -68,6 +68,8 @@ Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
     Route::post('/admin/users/demote/{user}', [UserManagementController::class, 'demote'])->name('admin.users.demote');
     Route::post('/admin/leave-requests/response/{request}', [LeaveController::class, 'leaveResponse'])->name('admin.leave-requests.response');
 
+    Route::get('/audit-logs', [AdminRoutesController::class, 'viewAuditLogs'])->name('admin.view-audit-logs');
+
     Route::get('/jobs/table', [WorkJobController::class, 'tableView'])->name('job.table');
     Route::resource('jobs', \App\Http\Controllers\WorkJobController::class);
     Route::get('/jobs/{job}/invoices/{year}', [WorkJobController::class, 'invoiceForm'])->where('year', '[0-9]{4}')->name('invoice.form');

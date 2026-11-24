@@ -57,6 +57,9 @@ class RegistrationTest extends TestCase
         $this->assertSame($department->id, $createdUser->department_id);
         $this->assertTrue(Hash::check('password', $createdUser->password));
         $this->assertAuthenticatedAs($admin);
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'user_created', 'entity_id' => (string) $createdUser->id, 'causer_id' => (string) $admin->id,
+        ]);
         $response->assertRedirect(route('admin.users', absolute: false));
     }
 

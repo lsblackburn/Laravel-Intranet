@@ -24,6 +24,7 @@
                 </select>
             </div>
         @endif
+        {{ $filters ?? '' }}
         <button type="submit" class="min-h-11 rounded-lg bg-(--color-primary) px-4 text-sm font-medium text-(--color-background)">Search</button>
     </form>
     <p x-cloak x-show="loading" role="status" class="mb-3 text-sm text-(--color-subtletext)">Updating results…</p>

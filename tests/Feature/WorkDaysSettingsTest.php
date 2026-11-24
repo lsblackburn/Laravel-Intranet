@@ -13,6 +13,38 @@ class WorkDaysSettingsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        \iamfarhad\LaravelAuditLog\Drivers\MySQLDriver::clearCache();
+    }
+
+    public function test_work_day_audits_describe_enabled_and_disabled_days_and_skip_unchanged_saves(): void
+    {
+        WorkDay::query()->update(['active' => false]);
+        $monday = WorkDay::where('day', 'Monday')->firstOrFail();
+        $tuesday = WorkDay::where('day', 'Tuesday')->firstOrFail();
+        $monday->update(['active' => true]);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $this->actingAs($admin);
+
+        $this->mock(\App\Services\ActivityLogger::class, function ($mock) use ($admin, $monday, $tuesday) {
+            foreach ([[$monday, 'disabled Monday as a working day'], [$tuesday, 'enabled Tuesday as a working day']] as [$day, $message]) {
+                $mock->shouldReceive('record')->once()->withArgs(
+                    fn ($actor, $subject, $action, $description) => $actor->is($admin)
+                        && $subject->is($day)
+                        && $action === 'update_work_day'
+                        && $description === $message
+                );
+            }
+        });
+
+        $payload = ['work_days' => [$tuesday->id]];
+        $this->patch(route('admin.work-days.update'), $payload)->assertSessionHasNoErrors()->assertRedirect();
+        $this->patch(route('admin.work-days.update'), $payload)->assertSessionHasNoErrors()->assertRedirect();
+    }
+
     public function test_admin_can_update_working_days(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);

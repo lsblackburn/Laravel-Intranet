@@ -16,6 +16,7 @@ class JobInvoicesTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        \iamfarhad\LaravelAuditLog\Drivers\MySQLDriver::clearCache();
         $this->actingAs(\App\Models\User::factory()->create(['role' => 'admin']));
         $this->withoutMiddleware(\App\Http\Middleware\RequireTwoFactorForRememberedSession::class);
     }
@@ -25,6 +26,70 @@ class JobInvoicesTest extends TestCase
         $client = Client::firstOrCreate(['name' => 'Invoice client']);
 
         return WorkJob::create(['title' => 'Job', 'project_type' => 'Website', 'client_id' => $client->id]);
+    }
+
+    public function test_invoice_form_reads_client_before_its_transaction_and_recurrence_rules_after_the_job_lock(): void
+    {
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'March', 'amount' => '125.50',
+            'frequency' => 'yearly', 'recurring' => true,
+        ]);
+        $baseline = \Illuminate\Support\Facades\DB::transactionLevel();
+        $queries = collect();
+        \Illuminate\Support\Facades\DB::listen(function ($query) use ($queries) {
+            $queries->push(['sql' => $query->sql, 'level' => $query->connection->transactionLevel()]);
+        });
+
+        $this->get(route('invoice.form', ['job' => $job, 'year' => 2027]))
+            ->assertOk()
+            ->assertViewHas('invoices', fn ($invoices) => $invoices['March']->amount === '125.50');
+
+        $clientRead = $queries->first(fn ($query) => str_contains($query['sql'], 'from "clients"'));
+        $rulesIndex = $queries->search(fn ($query) => str_contains($query['sql'], 'from "invoices"'));
+        $this->assertNotNull($clientRead);
+        $this->assertNotFalse($rulesIndex);
+        $this->assertSame($baseline, $clientRead['level']);
+        $this->assertSame($baseline + 1, $queries[$rulesIndex]['level']);
+
+        $jobLockRead = $queries->take($rulesIndex)->last(fn ($query) => str_contains($query['sql'], 'from "work_jobs"'));
+        $this->assertNotNull($jobLockRead);
+        $this->assertSame($baseline + 1, $jobLockRead['level']);
+        $inserts = $queries->filter(fn ($query) => str_starts_with($query['sql'], 'insert into "invoices"'));
+        $this->assertCount(12, $inserts);
+        foreach ($inserts as $insert) {
+            // firstOrCreate may add its own savepoint inside the controller transaction.
+            $this->assertGreaterThanOrEqual($baseline + 1, $insert['level']);
+        }
+    }
+
+    public function test_invoice_changes_are_audited_and_unchanged_saves_are_skipped(): void
+    {
+        $job = $this->job();
+        $amounts = array_fill_keys(JobInvoices::MONTHS, '0.00');
+        $amounts['March'] = '125.50';
+        $url = route('invoice.update', ['job' => $job, 'year' => 2026]);
+
+        $this->patch($url, ['amounts' => $amounts])->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseHas('audit_invoices_logs', [
+            'entity_id' => (string) $job->invoices()->where('month', 'March')->value('id'),
+            'action' => 'invoice_updated',
+        ]);
+        $entry = \Illuminate\Support\Facades\DB::table('audit_invoices_logs')->first();
+        $this->assertStringContainsString('amount from 0.00 to 125.50', json_decode($entry->metadata, true)['message']);
+
+        $this->patch($url, ['amounts' => $amounts])->assertRedirect();
+        $this->assertDatabaseCount('audit_invoices_logs', 1);
+
+        $stateUrl = route('invoice.state', ['job' => $job, 'year' => 2026, 'month' => 'March']);
+        $this->patchJson($stateUrl, ['state' => 'Ready To Invoice'])->assertOk();
+        $entry = \Illuminate\Support\Facades\DB::table('audit_invoices_logs')->where('action', 'invoice_state_updated')->first();
+        $this->assertNotNull($entry);
+        $this->assertStringContainsString('from In Progress to Ready To Invoice', json_decode($entry->metadata, true)['message']);
+
+        $this->patchJson($stateUrl, ['state' => 'Ready To Invoice'])->assertOk();
+        $this->assertDatabaseCount('audit_invoices_logs', 2);
     }
 
     public function test_table_shows_current_year_and_inherited_amounts_without_creating_records(): void

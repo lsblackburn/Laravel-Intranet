@@ -45,6 +45,14 @@ class LoginRequest extends FormRequest
         if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
+            app(\App\Services\ActivityLogger::class)->record(
+                actor: null,
+                subject: \App\Models\AuthenticationAttempt::forAudit(),
+                action: 'login_failed',
+                description: 'failed to log in to the account '.(string) $this->string('email'),
+                metadata: ['attempted_email' => (string) $this->string('email')],
+            );
+
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
             ]);
@@ -65,6 +73,14 @@ class LoginRequest extends FormRequest
         }
 
         event(new Lockout($this));
+
+        app(\App\Services\ActivityLogger::class)->record(
+            actor: null,
+            subject: \App\Models\AuthenticationAttempt::forAudit(),
+            action: 'login_throttled',
+            description: 'been blocked from attempting to log in to the account '.(string) $this->string('email').' due to too many attempts',
+            metadata: ['attempted_email' => (string) $this->string('email')],
+        );
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
 

@@ -11,6 +11,7 @@ use App\Models\Client;
 use App\Models\ProjectType;
 use App\Services\JobInvoices;
 use Illuminate\Support\Facades\DB;
+use App\Services\ActivityLogger;
 
 class WorkJobController extends Controller
 {
@@ -78,6 +79,13 @@ class WorkJobController extends Controller
 
         $job = WorkJob::create($data);
 
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $job,
+            action: 'job_created',
+            description: "created job for {$job->client->name}",
+        );
+
         return redirect()->route('jobs.edit', $job)->with('success', 'Job created successfully.');
     }
 
@@ -103,12 +111,21 @@ class WorkJobController extends Controller
     {
         $data = $this->validatedData($request);
 
-        DB::transaction(function () use ($job, $data) {
+        $job = DB::transaction(function () use ($job, $data) {
             $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
             $job->update($data);
             $job->invoices()->where('client_id', '!=', $job->client_id)
                 ->update(['client_id' => $job->client_id]);
+
+            return $job;
         });
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $job,
+            action: 'job_updated',
+            description: "updated job for {$job->client->name}",
+        );
 
         return redirect()->route('jobs.edit', $job)->with('success', 'Job updated successfully.');
     }
@@ -139,10 +156,42 @@ class WorkJobController extends Controller
         }
         $data = $request->validate($rules);
 
-        DB::transaction(function () use ($job, $year, $data) {
+        $changes = DB::transaction(function () use ($job, $year, $data) {
             $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+            app(JobInvoices::class)->ensureYear($job, $year);
+            $before = $job->invoices()->where('year', '>=', $year)->get()->keyBy('id');
             app(JobInvoices::class)->update($job, $year, $data);
+
+            return $job->invoices()->where('year', '>=', $year)->get()
+                ->map(function (Invoice $invoice) use ($before) {
+                    $previous = $before->get($invoice->id);
+                    $details = [];
+
+                    foreach (['amount', 'frequency', 'recurring', 'stops_recurrence'] as $field) {
+                        if ($previous->getAttribute($field) !== $invoice->getAttribute($field)) {
+                            $old = $previous->getAttribute($field);
+                            $new = $invoice->getAttribute($field);
+                            $label = str_replace('_', ' ', $field);
+                            $old = is_bool($old) ? ($old ? 'yes' : 'no') : $old;
+                            $new = is_bool($new) ? ($new ? 'yes' : 'no') : $new;
+                            $details[] = "{$label} from {$old} to {$new}";
+                        }
+                    }
+
+                    return ['invoice' => $invoice, 'details' => $details];
+                })->filter(fn ($change) => $change['details'] !== []);
         });
+
+        foreach ($changes as $change) {
+            $invoice = $change['invoice'];
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $invoice,
+                action: 'invoice_updated',
+                description: "updated the {$invoice->month} {$invoice->year} invoice for job {$job->title} for {$job->client->name} ("
+                    .implode('; ', $change['details']).')',
+            );
+        }
 
         return redirect()->route('invoice.form', ['job' => $job, 'year' => $year])
             ->with('success', 'Invoices updated successfully.');
@@ -162,6 +211,16 @@ class WorkJobController extends Controller
 
             return $invoice;
         });
+
+        if ($invoice->wasChanged('state')) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(),
+                subject: $invoice,
+                action: 'invoice_state_updated',
+                description: "changed the {$month} {$year} invoice status for job {$job->title} for {$job->client->name} from "
+                    .($invoice->getPrevious()['state'] ?? 'unset')." to {$invoice->state}",
+            );
+        }
 
         return response()->json(['state' => $invoice->state]);
     }
@@ -199,13 +258,20 @@ class WorkJobController extends Controller
         return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states'));
     }
 
-    public function destroy(WorkJob $job): RedirectResponse
+    public function destroy(Request $request, WorkJob $job): RedirectResponse
     {
         DB::transaction(function () use ($job) {
             $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
             $job->invoices()->delete();
             $job->delete();
         });
+
+        app(ActivityLogger::class)->record(
+            actor: $request->user(),
+            subject: $job,
+            action: 'job_deleted',
+            description: "deleted job {$job->title} for {$job->client->name} and all its associated invoices",
+        );
 
         return to_route('jobs.index')->with('success', 'Job and all associated invoices were deleted successfully.');
     }

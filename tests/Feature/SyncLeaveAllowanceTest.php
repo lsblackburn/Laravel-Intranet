@@ -29,6 +29,11 @@ class SyncLeaveAllowanceTest extends TestCase
             ->assertSuccessful();
 
         $this->assertSame(24.0, (float) $user->refresh()->leave_allowance);
+        $this->assertDatabaseHas('audit_users_logs', [
+            'action' => 'leave_allowance_synced', 'entity_id' => (string) $user->id, 'causer_id' => null,
+        ]);
+        $entry = \Illuminate\Support\Facades\DB::table('audit_users_logs')->where('action', 'leave_allowance_synced')->first();
+        $this->assertSame('System', json_decode($entry->metadata, true)['actor_name']);
     }
 
     public function test_february_twenty_ninth_refresh_runs_on_february_twenty_ninth_in_leap_year(): void
