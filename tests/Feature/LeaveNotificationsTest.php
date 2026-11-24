@@ -17,6 +17,63 @@ class LeaveNotificationsTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_both_leave_emails_wait_for_the_outermost_transaction_even_when_queue_after_commit_is_false(): void
+    {
+        config(['queue.default' => 'sync', 'queue.connections.sync.after_commit' => false]);
+        $user = User::factory()->create();
+        $leave = Leave::create([
+            'user_id' => $user->id, 'start_date' => '2026-12-01', 'end_date' => '2026-12-02',
+            'reason' => 'Annual leave', 'is_half_day' => false,
+        ]);
+        $sent = [];
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSending::class,
+            function ($event) use (&$sent) {
+                if ($event->channel === 'mail') {
+                    $sent[] = $event->notification::class;
+                }
+            });
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        $user->notify(new LeaveRequestSubmittedEmail($leave));
+        $user->notify(new LeaveRequestRespondedEmail($leave));
+        $this->assertSame([], $sent);
+
+        \Illuminate\Support\Facades\DB::commit();
+        $this->assertSame([], $sent);
+        \Illuminate\Support\Facades\DB::commit();
+
+        $this->assertSame([LeaveRequestSubmittedEmail::class, LeaveRequestRespondedEmail::class], $sent);
+    }
+
+    public function test_both_leave_emails_are_discarded_when_the_outer_transaction_rolls_back(): void
+    {
+        config(['queue.default' => 'sync', 'queue.connections.sync.after_commit' => false]);
+        $user = User::factory()->create();
+        $leave = Leave::create([
+            'user_id' => $user->id, 'start_date' => '2026-12-01', 'end_date' => '2026-12-02',
+            'reason' => 'Annual leave', 'is_half_day' => false,
+        ]);
+        $sent = [];
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSending::class,
+            function ($event) use (&$sent) {
+                if ($event->channel === 'mail') {
+                    $sent[] = $event->notification::class;
+                }
+            });
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        $user->notify(new LeaveRequestSubmittedEmail($leave));
+        $user->notify(new LeaveRequestRespondedEmail($leave));
+        \Illuminate\Support\Facades\DB::commit();
+        \Illuminate\Support\Facades\DB::rollBack();
+
+        // A later commit must not release callbacks discarded by the rollback.
+        \Illuminate\Support\Facades\DB::transaction(fn () => null);
+        $this->assertSame([], $sent);
+    }
+
     public function test_admins_are_notified_when_employee_submits_leave_request(): void
     {
         $admin = User::factory()->create(['role' => 'admin']);
