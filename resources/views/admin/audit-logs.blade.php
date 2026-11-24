@@ -28,7 +28,7 @@
                         @if ($logs->isEmpty())
                             <tr>
                                 <td colspan="2" class="px-6 py-4 text-center text-sm text-[var(--color-subtletext)]">
-                                    {{ request()->filled('search') ? 'No clients match your search.' : 'No clients yet. Add your first client to get started.' }}
+                                    {{ request()->filled('search') ? 'No logs match your search.' : 'No logs exist yet.' }}
                                 </td>
                             </tr>
                         @else
