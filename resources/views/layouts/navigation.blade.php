@@ -172,6 +172,7 @@
                         <x-mobile-navigation-link :href="route('admin.users')" :active="request()->routeIs('admin.users*')" icon="users" label="User management" />
                         <x-mobile-navigation-link :href="route('jobs.index')" :active="request()->routeIs('jobs.index', 'jobs.create', 'jobs.edit', 'invoice.*')" icon="briefcase" label="Jobs" />
                         <x-mobile-navigation-link :href="route('job.table')" :active="request()->routeIs('job.table')" icon="currency" label="Invoices" />
+                        <x-mobile-navigation-link :href="route('admin.view-audit-logs')" :active="request()->routeIs('admin.view-audit-logs')" icon="logs" label="Logs" />
                     </div>
                 </section>
             @endif
