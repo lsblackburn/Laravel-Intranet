@@ -92,6 +92,33 @@ class JobInvoicesTest extends TestCase
         $this->assertDatabaseCount('audit_invoices_logs', 2);
     }
 
+    public function test_clearing_an_override_audits_the_effective_amount_change_and_skips_unchanged_saves(): void
+    {
+        $job = $this->job();
+        $invoice = app(JobInvoices::class)->ensureYear($job, 2026)['March'];
+        $invoice->update(['amount' => '100.00', 'cell_amount' => '42.50', 'manually_modified' => true]);
+        $data = $this->data($job, 2026);
+        $url = route('invoice.update', ['job' => $job, 'year' => 2026]);
+        $data['amounts']['March'] = '42.50';
+        $this->patch($url, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseCount('audit_invoices_logs', 0);
+
+        $data['amounts']['March'] = '100.00';
+        $this->patch($url, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertNull($invoice->fresh()->cell_amount);
+        $this->assertSame('100.00', $invoice->fresh()->amount);
+        $entry = \Illuminate\Support\Facades\DB::table('audit_invoices_logs')->first();
+        $this->assertNotNull($entry);
+        $this->assertSame((string) $invoice->id, $entry->entity_id);
+        $this->assertSame('invoice_updated', $entry->action);
+        $message = json_decode($entry->metadata, true)['message'];
+        $this->assertStringContainsString('effective amount from 42.50 to 100.00', $message);
+        $this->assertStringContainsString('override amount from 42.50 to none', $message);
+
+        $this->patch($url, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseCount('audit_invoices_logs', 1);
+    }
+
     public function test_table_shows_current_year_and_inherited_amounts_without_creating_records(): void
     {
         $this->travelTo(\Illuminate\Support\Carbon::parse('2027-11-18 12:00:00'));

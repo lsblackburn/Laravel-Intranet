@@ -167,13 +167,22 @@ class WorkJobController extends Controller
                     $previous = $before->get($invoice->id);
                     $details = [];
 
-                    foreach (['amount', 'frequency', 'recurring', 'stops_recurrence'] as $field) {
+                    $oldEffectiveAmount = $previous->cell_amount ?? $previous->amount;
+                    $newEffectiveAmount = $invoice->cell_amount ?? $invoice->amount;
+                    if (($previous->cell_amount !== null || $invoice->cell_amount !== null)
+                        && $oldEffectiveAmount !== $newEffectiveAmount) {
+                        $details[] = "effective amount from {$oldEffectiveAmount} to {$newEffectiveAmount}";
+                    }
+
+                    foreach (['amount', 'cell_amount', 'frequency', 'recurring', 'stops_recurrence'] as $field) {
                         if ($previous->getAttribute($field) !== $invoice->getAttribute($field)) {
                             $old = $previous->getAttribute($field);
                             $new = $invoice->getAttribute($field);
-                            $label = str_replace('_', ' ', $field);
+                            $label = $field === 'cell_amount' ? 'override amount' : str_replace('_', ' ', $field);
                             $old = is_bool($old) ? ($old ? 'yes' : 'no') : $old;
                             $new = is_bool($new) ? ($new ? 'yes' : 'no') : $new;
+                            $old ??= 'none';
+                            $new ??= 'none';
                             $details[] = "{$label} from {$old} to {$new}";
                         }
                     }
