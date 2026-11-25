@@ -258,12 +258,13 @@ class WorkJobController extends Controller
         return response()->json(['state' => $invoice->state]);
     }
 
-    public function tableView(Request $request): View
+    public function tableView(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $request->validate([
             'status' => ['nullable', 'in:all,active,complete'],
             'year' => ['nullable', 'integer', 'between:1901,2155'],
             'range' => ['nullable', 'in:rolling,financial'],
+            'export' => ['nullable', 'in:csv'],
         ]);
         $status = $request->input('status', 'all');
         $today = now()->startOfMonth();
@@ -306,6 +307,40 @@ class WorkJobController extends Controller
         $total = $amounts->sum(fn ($values) => $values->sum());
         $monthlyTotals = $months->map(fn ($date, $month) => $amounts->sum(fn ($values) => (float) $values[$month]));
         $activeCount = $jobs->filter(fn ($job) => $job->active && ! $job->completed)->count();
+
+        if ($request->input('export') === 'csv') {
+            $filename = 'job-invoices-'.$months->first()->format('Y-m').'-to-'.$months->last()->format('Y-m').'-'.$status.'.csv';
+
+            return response()->streamDownload(function () use ($clientGroups, $months, $amounts, $monthlyTotals, $total) {
+                $output = fopen('php://output', 'w');
+                // A BOM lets spreadsheet applications recognise UTF-8 client and project names.
+                fwrite($output, "\xEF\xBB\xBF");
+                $write = function (array $row) use ($output) {
+                    foreach (array_slice($row, 0, 3, true) as $key => $value) {
+                        // Treat names as text even when they start with spreadsheet formula characters.
+                        if (is_string($value) && preg_match('/^[\s]*[=+@-]/u', $value)) {
+                            $row[$key] = "'".$value;
+                        }
+                    }
+                    fputcsv($output, $row, ',', '"', '', "\r\n");
+                };
+                $money = fn ($value) => number_format((float) $value, 2, '.', '');
+                $totals = ['Total', '', '', $money($total), ...$monthlyTotals->map($money)->all()];
+                $write(['Client', 'Project type', 'Project / Item', 'Total (GBP)', ...$months->map(fn ($date) => $date->format('M Y').' (GBP)')->values()->all()]);
+                $write($totals);
+                foreach ($clientGroups as $clientJobs) {
+                    $client = $clientJobs->first()->client?->name ?? 'Unassigned';
+                    foreach ($clientJobs->groupBy('project_type') as $projectType => $jobs) {
+                        foreach ($jobs as $job) {
+                            $values = $amounts[$job->id];
+                            $write([$client, $projectType ?: 'Unassigned', $job->title, $money($values->sum()), ...$values->map($money)->values()->all()]);
+                        }
+                    }
+                }
+                $write($totals);
+                fclose($output);
+            }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
 
         return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'monthlyTotals', 'activeCount', 'states', 'range', 'periodLabel', 'financialYear'));
     }

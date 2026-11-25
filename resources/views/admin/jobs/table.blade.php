@@ -31,6 +31,7 @@
                     </nav>
 
                     <nav aria-label="Invoice period" class="flex flex-wrap items-center gap-2 text-sm">
+                        <a href="{{ route('job.table', ['status' => $status, 'range' => $range, 'year' => $year, 'export' => 'csv']) }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">Export CSV</a>
                         <button type="button" @click="editMode = !editMode; editingCell = null; sessionStorage.setItem('invoiceTableMode', editMode ? 'edit' : 'invoice')" :aria-pressed="editMode" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)" x-text="editMode ? 'Switch to invoice mode' : 'Edit amounts'">Edit amounts</button>
                         <a href="{{ route('job.table', ['status' => $status, 'range' => $range === 'financial' ? 'rolling' : 'financial', 'year' => $year]) }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">{{ $range === 'financial' ? 'Show 7 months' : 'Show financial year (May–April)' }}</a>
                         @if ($range === 'financial' && $year > 1901)

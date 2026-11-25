@@ -121,6 +121,53 @@ class JobInvoicesTest extends TestCase
         $this->get(route('job.table'))->assertOk()->assertSee('No jobs to display.');
     }
 
+    public function test_csv_export_matches_filtered_months_cell_edits_and_totals(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-25'));
+        $job = $this->job();
+        $job->update(['title' => 'Design, "phase 1"', 'active' => true, 'completed' => false]);
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2027, 'month' => 'January', 'amount' => '100.00', 'cell_amount' => '42.50',
+        ]);
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'November', 'amount' => '-5.00',
+        ]);
+        $other = $this->job();
+        $other->update(['title' => 'Excluded project', 'completed' => true]);
+        $params = ['status' => 'active', 'range' => 'rolling', 'year' => 2026, 'export' => 'csv'];
+        $this->get(route('job.table', ['status' => 'active']))->assertOk()->assertSee(route('job.table', $params));
+        $response = $this->get(route('job.table', $params))->assertOk()
+            ->assertDownload('job-invoices-2026-08-to-2027-02-active.csv')
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $csv = $response->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        $rows = array_map(fn ($line) => str_getcsv($line, ',', '"', ''), explode("\r\n", trim(substr($csv, 3))));
+        $this->assertCount(4, $rows);
+        $this->assertSame(['Client', 'Project type', 'Project / Item', 'Total (GBP)', 'Aug 2026 (GBP)', 'Sep 2026 (GBP)', 'Oct 2026 (GBP)', 'Nov 2026 (GBP)', 'Dec 2026 (GBP)', 'Jan 2027 (GBP)', 'Feb 2027 (GBP)'], $rows[0]);
+        $this->assertSame(['Invoice client', 'Website', 'Design, "phase 1"', '37.50', '0.00', '0.00', '0.00', '-5.00', '0.00', '42.50', '0.00'], $rows[2]);
+        $this->assertSame($rows[1], $rows[3]);
+        $this->assertSame('37.50', $rows[3][3]);
+        $this->assertStringNotContainsString('Excluded project', $csv);
+        $this->assertDatabaseCount('invoices', 2);
+    }
+
+    public function test_csv_export_uses_selected_financial_year_and_handles_empty_tables(): void
+    {
+        $response = $this->get(route('job.table', ['range' => 'financial', 'year' => 2024, 'export' => 'csv']))
+            ->assertOk()->assertDownload('job-invoices-2024-05-to-2025-04-all.csv');
+        $csv = $response->streamedContent();
+        $rows = array_map(fn ($line) => str_getcsv($line, ',', '"', ''), explode("\r\n", trim(substr($csv, 3))));
+        $this->assertCount(3, $rows);
+        $this->assertCount(16, $rows[0]);
+        $this->assertSame('May 2024 (GBP)', $rows[0][4]);
+        $this->assertSame('Apr 2025 (GBP)', $rows[0][15]);
+        $this->assertSame('0.00', $rows[1][3]);
+        $this->assertSame($rows[1], $rows[2]);
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
     public function test_table_amount_edit_changes_only_one_cell_without_changing_status_or_other_months(): void
     {
         $job = $this->job();
