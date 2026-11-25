@@ -66,7 +66,7 @@
                     @if (session('success'))
                         <p role="status" class="mb-4 text-sm text-(--color-success-text)">{{ session('success') }}</p>
                     @endif
-                    <p class="mb-4 text-sm text-(--color-subtletext)">Choose a frequency to repeat a change. Click the selected frequency again to stop recurrence and reset amounts to &pound;0 from that month onward, including future years. Monthly changes replace every later month, including other values entered below.</p>
+                    <p class="mb-4 text-sm text-(--color-subtletext)">Choose a frequency to repeat a change. Monthly and yearly changes leave individually edited amounts unchanged. Click the selected frequency again to stop recurrence and reset all amounts to &pound;0 from that month onward, including individual edits and future years.</p>
                     <form method="post" action="{{ route('invoice.update', ['job' => $job, 'year' => $year]) }}" class="space-y-6"
                         x-data="{
                             total: '0.00',

@@ -632,6 +632,79 @@ class JobInvoicesTest extends TestCase
         $this->assertSame('0.00', $service->amountsForYear($rows, 2028)['March']);
     }
 
+    public function test_recurrence_replacements_preserve_individually_modified_cells_in_current_and_future_years(): void
+    {
+        $service = app(JobInvoices::class);
+        foreach (['monthly', 'yearly'] as $frequency) {
+            $job = $this->job();
+            $data = $this->data($job, 2026);
+            $data['amounts']['January'] = '100.00';
+            $data['frequencies']['January'] = $frequency;
+            $service->update($job, 2026, $data);
+            $current = $service->ensureYear($job, 2026);
+            $future = $service->ensureYear($job, 2027);
+            $service->ensureYear($job, 2028);
+            $protectedMonth = $frequency === 'monthly' ? 'March' : 'January';
+            foreach ([2026 => '42.50', 2027 => '65.00'] as $editYear => $amount) {
+                // The yearly case protects a future January without editing the rule being replaced.
+                $editYear = $frequency === 'yearly' ? $editYear + 1 : $editYear;
+                $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => $editYear, 'month' => $protectedMonth]), ['amount' => $amount])->assertOk();
+                $edited = $job->invoices()->where('year', $editYear)->where('month', $protectedMonth)->first();
+                $this->assertTrue($edited->manually_modified);
+            }
+            $data = $this->data($job, 2026);
+            $data['amounts']['January'] = '200.00';
+            $service->update($job, 2026, $data);
+            foreach ([2026 => '42.50', 2027 => '65.00'] as $editYear => $amount) {
+                $editYear = $frequency === 'yearly' ? $editYear + 1 : $editYear;
+                $edited = $job->invoices()->where('year', $editYear)->where('month', $protectedMonth)->first();
+                $this->assertSame($amount, $edited->cell_amount);
+                $this->assertTrue($edited->manually_modified);
+                $this->assertSame($amount, $service->amountsForYear($job->invoices()->get(), $editYear)[$protectedMonth]);
+            }
+            $this->assertSame('200.00', $current['January']->fresh()->amount);
+            if ($frequency === 'monthly') {
+                $this->assertSame('200.00', $current['April']->fresh()->amount);
+                $this->assertSame('200.00', $future['April']->fresh()->amount);
+            }
+            // Saving the effective amounts without edits must keep the individual flags and values.
+            $invoices = $service->ensureYear($job, 2027);
+            $service->update($job, 2027, [
+                'amounts' => $invoices->map(fn ($invoice) => $invoice->cell_amount ?? $invoice->amount)->all(),
+                'frequencies' => array_filter($service->frequenciesFor($job, $invoices)),
+            ]);
+            $this->assertTrue($invoices[$protectedMonth]->fresh()->manually_modified);
+            $this->assertSame($frequency === 'monthly' ? '65.00' : '42.50', $invoices[$protectedMonth]->fresh()->cell_amount);
+        }
+    }
+
+    public function test_only_explicit_replacements_clear_unprotected_overrides(): void
+    {
+        $job = $this->job();
+        $service = app(JobInvoices::class);
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '100.00';
+        $data['frequencies']['January'] = 'monthly';
+        $service->update($job, 2026, $data);
+        $current = $service->ensureYear($job, 2026);
+        $future = $service->ensureYear($job, 2027);
+        $current['March']->update(['cell_amount' => '42.50']);
+        $future['March']->update(['cell_amount' => '65.00']);
+        $service->update($job, 2026, [
+            'amounts' => $current->map(fn ($invoice) => $invoice->cell_amount ?? $invoice->amount)->all(),
+            'frequencies' => array_filter($service->frequenciesFor($job, $current)),
+        ]);
+        $this->assertSame('42.50', $current['March']->fresh()->cell_amount);
+        $this->assertSame('65.00', $future['March']->fresh()->cell_amount);
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '200.00';
+        $service->update($job, 2026, $data);
+        $this->assertNull($current['March']->fresh()->cell_amount);
+        $this->assertNull($future['March']->fresh()->cell_amount);
+        $this->assertSame('200.00', $current['March']->fresh()->amount);
+        $this->assertSame('200.00', $future['March']->fresh()->amount);
+    }
+
     public function test_clearing_yearly_frequency_in_a_later_year_preserves_the_earlier_rule(): void
     {
         $job = $this->job();

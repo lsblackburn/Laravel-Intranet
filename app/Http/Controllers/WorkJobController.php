@@ -214,6 +214,7 @@ class WorkJobController extends Controller
                 ]);
             }
             $invoice->cell_amount = $data['amount'];
+            $invoice->manually_modified = true;
             $invoice->save();
 
             return $invoice;
