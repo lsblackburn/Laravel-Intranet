@@ -206,13 +206,7 @@ class WorkJobController extends Controller
 
         $invoice = DB::transaction(function () use ($job, $year, $month, $data) {
             $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
-            $invoice = $job->invoices()->where('year', $year)->where('month', $month)->first();
-            if (! $invoice) {
-                $amount = app(JobInvoices::class)->amountsForYear($job->invoices()->get(), $year)->get($month);
-                $invoice = $job->invoices()->create([
-                    'client_id' => $job->client_id, 'year' => $year, 'month' => $month, 'amount' => $amount,
-                ]);
-            }
+            $invoice = app(JobInvoices::class)->ensureMonth($job, $year, $month);
             $invoice->cell_amount = $data['amount'];
             $invoice->manually_modified = true;
             $invoice->save();

@@ -48,20 +48,32 @@ class JobInvoices
     }
 
     // The caller locks the job inside a transaction to serialize creation and updates.
+    public function ensureMonth(WorkJob $job, int $year, string $month): Invoice
+    {
+        return $this->createMonth($job, $year, $month, $this->rules($job));
+    }
+
+    private function createMonth(WorkJob $job, int $year, string $month, Collection $rules): Invoice
+    {
+        $rule = $this->ruleFor($year, $month, $rules);
+
+        return Invoice::firstOrCreate([
+            'work_job_id' => $job->id, 'year' => $year, 'month' => $month,
+        ], [
+            'client_id' => $job->client_id,
+            'amount' => $rule?->amount ?? '0.00',
+            'frequency' => $rule?->frequency ?? 'yearly',
+            'recurring' => false,
+        ]);
+    }
+
+    // The caller locks the job inside a transaction to serialize creation and updates.
     public function ensureYear(WorkJob $job, int $year): Collection
     {
         $rules = $this->rules($job);
 
         foreach (self::MONTHS as $month) {
-            $rule = $this->ruleFor($year, $month, $rules);
-            Invoice::firstOrCreate([
-                'work_job_id' => $job->id, 'year' => $year, 'month' => $month,
-            ], [
-                'client_id' => $job->client_id,
-                'amount' => $rule?->amount ?? '0.00',
-                'frequency' => $rule?->frequency ?? 'yearly',
-                'recurring' => false,
-            ]);
+            $this->createMonth($job, $year, $month, $rules);
         }
 
         return Invoice::where('work_job_id', $job->id)->where('year', $year)->get()->keyBy('month');

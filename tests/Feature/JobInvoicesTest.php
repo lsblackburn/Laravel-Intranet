@@ -205,6 +205,42 @@ class JobInvoicesTest extends TestCase
         $this->assertSame('100.00', $rule->fresh()->amount);
     }
 
+    public function test_editing_an_uncreated_month_inherits_frequency_and_allows_stopping_recurrence(): void
+    {
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'December', 'amount' => '100.00',
+            'frequency' => 'monthly', 'recurring' => true,
+        ]);
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 2027, 'month' => 'February']), ['amount' => '42.50'])
+            ->assertOk()->assertJson(['amount' => '42.50']);
+        $this->assertDatabaseCount('invoices', 2);
+        $invoice = $job->invoices()->where('year', 2027)->where('month', 'February')->firstOrFail();
+        $this->assertSame('monthly', $invoice->frequency);
+        $this->assertSame('100.00', $invoice->amount);
+        $this->assertSame('42.50', $invoice->cell_amount);
+        $this->assertTrue($invoice->manually_modified);
+        $this->assertFalse($invoice->recurring);
+
+        $this->get(route('invoice.form', ['job' => $job, 'year' => 2027]))->assertOk()
+            ->assertViewHas('followingFrequencies', fn ($frequencies) => $frequencies['February'] === 'monthly');
+        $data = $this->data($job, 2027);
+        foreach (array_slice(JobInvoices::MONTHS, 1) as $month) {
+            $data['amounts'][$month] = '0.00';
+            $data['frequencies'][$month] = null;
+        }
+        $this->patch(route('invoice.update', ['job' => $job, 'year' => 2027]), $data)
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertTrue($invoice->fresh()->stops_recurrence);
+        $this->assertNull($invoice->fresh()->cell_amount);
+        $rows = $job->invoices()->get();
+        $service = app(JobInvoices::class);
+        $this->assertSame('100.00', $service->amountsForYear($rows, 2027)['January']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2027)['February']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2028)['March']);
+    }
+
     public function test_table_amount_edit_rejects_invalid_values_without_writing_invoices(): void
     {
         $job = $this->job();
