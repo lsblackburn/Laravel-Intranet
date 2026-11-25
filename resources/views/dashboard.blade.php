@@ -46,25 +46,20 @@
                     <a href="{{ route('job.table') }}" class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext) hover:text-(--color-primary)">View job invoices <span aria-hidden="true">&#8599;</span></a>
                 </section>
 
-                <a class="flex flex-col items-stretch rounded-xl border border-(--color-border) bg-(--color-card) p-5 md:px-[26px] md:py-6 shadow-(--workspace-shadow) transition-colors hover:border-(--color-primary)"
-                href="{{ route('leave.view') }}">
+                <section aria-labelledby="monthly-invoices-heading" class="flex flex-col items-stretch rounded-xl border border-(--color-border) bg-(--color-card) p-5 md:px-[26px] md:py-6 shadow-(--workspace-shadow)">
+                    <h2 id="monthly-invoices-heading" class="text-[11px] font-semibold tracking-[.12em] uppercase text-(--color-subtletext)">This month's invoices</h2>
+                    <p class="mt-2 text-sm text-(--color-subtletext)">{{ $currentMonth->format('F Y') }}</p>
 
-                    <span class="block text-[11px] font-semibold tracking-[.12em] uppercase text-(--color-subtletext)">Time
-                        for yourself</span>
+                    <p class="mt-5 text-3xl font-medium tracking-tight tabular-nums sm:text-4xl">&pound;{{ number_format($monthInvoiced, 2) }}<span class="text-(--color-subtletext)"> / &pound;{{ number_format($monthTotal, 2) }}</span></p>
+                    <p class="mt-2 text-sm text-(--color-subtletext)">Already invoiced / total invoice amount</p>
 
-                    <div class="mt-4 mb-5 flex items-baseline gap-3">
-                        <strong
-                            class="text-4xl font-medium leading-tight tracking-[-.05em] min-[421px]:text-[44px]">{{ Auth::user()->remainingLeaveAllowance() }}</strong>
-                            <span class="text-[13px] text-(--color-subtletext)">days remaining</span>
-                        </div>
+                    <div role="progressbar" aria-labelledby="monthly-invoices-heading" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ $invoicedPercentage }}" aria-valuetext="{{ $invoicedPercentage }}% invoiced" class="mt-5 h-3 overflow-hidden rounded-full bg-(--color-surface-alt)">
+                        <div class="h-full rounded-full bg-(--color-primary)" style="width: {{ $invoicedPercentage }}%"></div>
+                    </div>
+                    <p class="mt-2 mb-5 text-sm text-(--color-subtletext)">{{ $invoicedPercentage }}% invoiced</p>
 
-                    <span
-                        class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext)">Of
-                        {{ Auth::user()->leave_allowance }} days annual allowance <span
-                            aria-hidden="true">&#8599;</span>
-                        
-                    </span>
-                </a>
+                    <a href="{{ route('job.table') }}" class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext) hover:text-(--color-primary)">View job invoices <span aria-hidden="true">&#8599;</span></a>
+                </section>
 
 
             </div>
