@@ -271,9 +271,10 @@ class WorkJobController extends Controller
             ->sortBy(fn ($group) => mb_strtolower($group->first()->client?->name ?? 'Unassigned'));
 
         $total = $amounts->sum(fn ($values) => $values->sum());
+        $monthlyTotals = $months->map(fn ($date, $month) => $amounts->sum(fn ($values) => (float) $values[$month]));
         $activeCount = $jobs->filter(fn ($job) => $job->active && ! $job->completed)->count();
 
-        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states', 'range', 'periodLabel', 'financialYear'));
+        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'monthlyTotals', 'activeCount', 'states', 'range', 'periodLabel', 'financialYear'));
     }
 
     public function destroy(Request $request, WorkJob $job): RedirectResponse

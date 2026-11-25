@@ -152,7 +152,10 @@
                                 <th scope="col" class="text-right tabular-nums whitespace-nowrap">Total</th>
 
                                 @foreach ($months as $month => $date)
-                                    <th scope="col" @class(['min-w-24 text-center', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth]) @if ($month === $currentMonth) aria-current="date" @endif>{{ $date->format('M') }}<br>{{ $date->year }}</th>
+                                    <th scope="col" @class(['min-w-24 text-center', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth]) @if ($month === $currentMonth) aria-current="date" @endif>
+                                        {{ $date->format('M') }}<br>{{ $date->year }}
+                                        <span class="mt-2 block whitespace-nowrap tabular-nums"><span class="sr-only">Total: </span>&pound;{{ number_format($monthlyTotals[$month], 2) }}</span>
+                                    </th>
                                 @endforeach
 
                             <th scope="col">Actions</th>
@@ -254,6 +257,17 @@
                             </tbody>
 
                         @endforelse
+
+                        <tfoot class="bg-(--color-surface-alt) font-semibold [&_th]:py-3.5 [&_td]:py-3.5">
+                            <tr>
+                                <th scope="row" class="text-left">Total</th>
+                                <td class="text-right whitespace-nowrap tabular-nums">&pound;{{ number_format($total, 2) }}</td>
+                                @foreach ($months as $month => $date)
+                                    <td @class(['text-right whitespace-nowrap tabular-nums', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth])>&pound;{{ number_format($monthlyTotals[$month], 2) }}</td>
+                                @endforeach
+                                <td></td>
+                            </tr>
+                        </tfoot>
 
                     </table>
 
