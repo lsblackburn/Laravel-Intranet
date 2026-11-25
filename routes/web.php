@@ -30,9 +30,8 @@ Route::middleware(['auth', '2fa.remember'])->group(function () {
     Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->middleware(['verified'])->name('dashboard');
+    Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)
+        ->middleware(['verified'])->name('dashboard');
 
     Route::get('/calendar', function () {
         return view('calendar');
@@ -74,6 +73,7 @@ Route::middleware(['auth', '2fa.remember', 'role:admin'])->group(function () {
     Route::resource('jobs', \App\Http\Controllers\WorkJobController::class);
     Route::get('/jobs/{job}/invoices/{year}', [WorkJobController::class, 'invoiceForm'])->where('year', '[0-9]{4}')->name('invoice.form');
     Route::patch('/jobs/{job}/invoices/{year}/{month}/state', [WorkJobController::class, 'invoiceState'])->where('year', '[0-9]{4}')->name('invoice.state');
+    Route::patch('/jobs/{job}/invoices/{year}/{month}/amount', [WorkJobController::class, 'invoiceAmount'])->where('year', '[0-9]{4}')->name('invoice.amount');
     Route::patch('/jobs/{job}/invoices/{year}/update', [WorkJobController::class, 'invoiceUpdate'])->where('year', '[0-9]{4}')->name('invoice.update');
     
     Route::get('/admin/app-configuration', [AdminRoutesController::class, 'viewConfig'])->name('admin.view-config');

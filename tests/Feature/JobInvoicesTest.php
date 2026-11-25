@@ -92,6 +92,33 @@ class JobInvoicesTest extends TestCase
         $this->assertDatabaseCount('audit_invoices_logs', 2);
     }
 
+    public function test_clearing_an_override_audits_the_effective_amount_change_and_skips_unchanged_saves(): void
+    {
+        $job = $this->job();
+        $invoice = app(JobInvoices::class)->ensureYear($job, 2026)['March'];
+        $invoice->update(['amount' => '100.00', 'cell_amount' => '42.50', 'manually_modified' => true]);
+        $data = $this->data($job, 2026);
+        $url = route('invoice.update', ['job' => $job, 'year' => 2026]);
+        $data['amounts']['March'] = '42.50';
+        $this->patch($url, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseCount('audit_invoices_logs', 0);
+
+        $data['amounts']['March'] = '100.00';
+        $this->patch($url, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertNull($invoice->fresh()->cell_amount);
+        $this->assertSame('100.00', $invoice->fresh()->amount);
+        $entry = \Illuminate\Support\Facades\DB::table('audit_invoices_logs')->first();
+        $this->assertNotNull($entry);
+        $this->assertSame((string) $invoice->id, $entry->entity_id);
+        $this->assertSame('invoice_updated', $entry->action);
+        $message = json_decode($entry->metadata, true)['message'];
+        $this->assertStringContainsString('effective amount from 42.50 to 100.00', $message);
+        $this->assertStringContainsString('override amount from 42.50 to none', $message);
+
+        $this->patch($url, $data)->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertDatabaseCount('audit_invoices_logs', 1);
+    }
+
     public function test_table_shows_current_year_and_inherited_amounts_without_creating_records(): void
     {
         $this->travelTo(\Illuminate\Support\Carbon::parse('2027-11-18 12:00:00'));
@@ -108,9 +135,9 @@ class JobInvoicesTest extends TestCase
         ]);
 
         $this->get(route('job.table'))->assertOk()
-            ->assertViewHas('year', 2027)->assertViewHas('currentMonth', 'November')
-            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['March'] === '80.00'
-                && $amounts[$job->id]['April'] === '0.00')
+            ->assertViewHas('year', 2027)->assertViewHas('currentMonth', '2027-11')
+            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['2027-08'] === '0.00'
+                && $amounts[$job->id]['2028-02'] === '0.00')
             ->assertSee('Invoice client')->assertSee('aria-current="date"', false)
             ->assertSee(route('invoice.form', ['job' => $job, 'year' => 2027]), false);
         $this->assertDatabaseCount('invoices', 2);
@@ -119,6 +146,174 @@ class JobInvoicesTest extends TestCase
     public function test_empty_invoice_table_renders(): void
     {
         $this->get(route('job.table'))->assertOk()->assertSee('No jobs to display.');
+    }
+
+    public function test_csv_export_matches_filtered_months_cell_edits_and_totals(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-25'));
+        $job = $this->job();
+        $job->update(['title' => 'Design, "phase 1"', 'active' => true, 'completed' => false]);
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2027, 'month' => 'January', 'amount' => '100.00', 'cell_amount' => '42.50',
+        ]);
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'November', 'amount' => '-5.00',
+        ]);
+        $other = $this->job();
+        $other->update(['title' => 'Excluded project', 'completed' => true]);
+        $params = ['status' => 'active', 'range' => 'rolling', 'year' => 2026, 'export' => 'csv'];
+        $this->get(route('job.table', ['status' => 'active']))->assertOk()->assertSee(route('job.table', $params));
+        $response = $this->get(route('job.table', $params))->assertOk()
+            ->assertDownload('job-invoices-2026-08-to-2027-02-active.csv')
+            ->assertHeader('Content-Type', 'text/csv; charset=UTF-8');
+        $csv = $response->streamedContent();
+        $this->assertStringStartsWith("\xEF\xBB\xBF", $csv);
+        $rows = array_map(fn ($line) => str_getcsv($line, ',', '"', ''), explode("\r\n", trim(substr($csv, 3))));
+        $this->assertCount(4, $rows);
+        $this->assertSame(['Client', 'Project type', 'Project / Item', 'Total (GBP)', 'Aug 2026 (GBP)', 'Sep 2026 (GBP)', 'Oct 2026 (GBP)', 'Nov 2026 (GBP)', 'Dec 2026 (GBP)', 'Jan 2027 (GBP)', 'Feb 2027 (GBP)'], $rows[0]);
+        $this->assertSame(['Invoice client', 'Website', 'Design, "phase 1"', '37.50', '0.00', '0.00', '0.00', '-5.00', '0.00', '42.50', '0.00'], $rows[2]);
+        $this->assertSame($rows[1], $rows[3]);
+        $this->assertSame('37.50', $rows[3][3]);
+        $this->assertStringNotContainsString('Excluded project', $csv);
+        $this->assertDatabaseCount('invoices', 2);
+    }
+
+    public function test_csv_export_uses_selected_financial_year_and_handles_empty_tables(): void
+    {
+        $response = $this->get(route('job.table', ['range' => 'financial', 'year' => 2024, 'export' => 'csv']))
+            ->assertOk()->assertDownload('job-invoices-2024-05-to-2025-04-all.csv');
+        $csv = $response->streamedContent();
+        $rows = array_map(fn ($line) => str_getcsv($line, ',', '"', ''), explode("\r\n", trim(substr($csv, 3))));
+        $this->assertCount(3, $rows);
+        $this->assertCount(16, $rows[0]);
+        $this->assertSame('May 2024 (GBP)', $rows[0][4]);
+        $this->assertSame('Apr 2025 (GBP)', $rows[0][15]);
+        $this->assertSame('0.00', $rows[1][3]);
+        $this->assertSame($rows[1], $rows[2]);
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_table_amount_edit_changes_only_one_cell_without_changing_status_or_other_months(): void
+    {
+        $job = $this->job();
+        $rule = Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'November', 'amount' => '100.00',
+            'frequency' => 'monthly', 'recurring' => true, 'state' => 'Already Invoiced',
+        ]);
+        $service = app(JobInvoices::class);
+        $before = $service->amountsForYear($job->invoices()->get(), 2027)->all();
+        $url = route('invoice.amount', ['job' => $job, 'year' => 2026, 'month' => 'November']);
+
+        $this->patchJson($url, ['amount' => '42.50', 'state' => 'In Progress'])
+            ->assertOk()->assertJson(['amount' => '42.50']);
+        $this->assertSame('Already Invoiced', $rule->fresh()->state);
+        $this->assertSame('100.00', $rule->fresh()->amount);
+        $this->assertSame('42.50', $service->amountsForYear($job->invoices()->get(), 2026)['November']);
+        $this->assertSame('100.00', $service->amountsForYear($job->invoices()->get(), 2026)['December']);
+        $this->assertSame($before, $service->amountsForYear($job->invoices()->get(), 2027)->all());
+        $this->assertDatabaseCount('invoices', 1);
+
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 2027, 'month' => 'January']), ['amount' => '0'])
+            ->assertOk()->assertJson(['amount' => '0.00']);
+        $this->assertDatabaseCount('invoices', 2);
+        $values = $service->amountsForYear($job->invoices()->get(), 2027);
+        $this->assertSame('0.00', $values['January']);
+        $this->assertSame('100.00', $values['February']);
+        $this->get(route('invoice.form', ['job' => $job, 'year' => 2026]))->assertOk()->assertSee('42.50');
+        $invoices = $service->ensureYear($job, 2026);
+        $service->update($job, 2026, [
+            'amounts' => $invoices->map(fn ($invoice) => $invoice->cell_amount ?? $invoice->amount)->all(),
+            'frequencies' => array_filter($service->frequenciesFor($job, $invoices)),
+        ]);
+        $this->assertSame('42.50', $rule->fresh()->cell_amount);
+        $this->assertSame('100.00', $rule->fresh()->amount);
+    }
+
+    public function test_editing_an_uncreated_month_inherits_frequency_and_allows_stopping_recurrence(): void
+    {
+        $job = $this->job();
+        Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'December', 'amount' => '100.00',
+            'frequency' => 'monthly', 'recurring' => true,
+        ]);
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 2027, 'month' => 'February']), ['amount' => '42.50'])
+            ->assertOk()->assertJson(['amount' => '42.50']);
+        $this->assertDatabaseCount('invoices', 2);
+        $invoice = $job->invoices()->where('year', 2027)->where('month', 'February')->firstOrFail();
+        $this->assertSame('monthly', $invoice->frequency);
+        $this->assertSame('100.00', $invoice->amount);
+        $this->assertSame('42.50', $invoice->cell_amount);
+        $this->assertTrue($invoice->manually_modified);
+        $this->assertFalse($invoice->recurring);
+
+        $this->get(route('invoice.form', ['job' => $job, 'year' => 2027]))->assertOk()
+            ->assertViewHas('followingFrequencies', fn ($frequencies) => $frequencies['February'] === 'monthly');
+        $data = $this->data($job, 2027);
+        foreach (array_slice(JobInvoices::MONTHS, 1) as $month) {
+            $data['amounts'][$month] = '0.00';
+            $data['frequencies'][$month] = null;
+        }
+        $this->patch(route('invoice.update', ['job' => $job, 'year' => 2027]), $data)
+            ->assertSessionHasNoErrors()->assertRedirect();
+        $this->assertTrue($invoice->fresh()->stops_recurrence);
+        $this->assertNull($invoice->fresh()->cell_amount);
+        $rows = $job->invoices()->get();
+        $service = app(JobInvoices::class);
+        $this->assertSame('100.00', $service->amountsForYear($rows, 2027)['January']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2027)['February']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2028)['March']);
+    }
+
+    public function test_table_amount_edit_rejects_invalid_values_without_writing_invoices(): void
+    {
+        $job = $this->job();
+        $url = route('invoice.amount', ['job' => $job, 'year' => 2026, 'month' => 'November']);
+        foreach ([null, 'invalid', '1.001', '10000000000'] as $amount) {
+            $this->patchJson($url, ['amount' => $amount])->assertUnprocessable()->assertJsonValidationErrors('amount');
+        }
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 1900, 'month' => 'November']), ['amount' => 1])->assertNotFound();
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 2026, 'month' => 'invalid']), ['amount' => 1])->assertNotFound();
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
+    public function test_rolling_months_cross_years_and_use_each_months_amount_and_state(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-25'));
+        $job = $this->job();
+        foreach ([[2026, 'November', '50.00', 'In Progress'], [2027, 'January', '75.00', 'Already Invoiced']] as [$year, $month, $amount, $state]) {
+            Invoice::create([
+                'work_job_id' => $job->id, 'client_id' => $job->client_id,
+                'year' => $year, 'month' => $month, 'amount' => $amount, 'state' => $state,
+            ]);
+        }
+
+        $this->get(route('job.table'))->assertOk()
+            ->assertViewHas('months', fn ($months) => $months->keys()->all() === [
+                '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02',
+            ])
+            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['2027-01'] === '75.00')
+            ->assertViewHas('states', fn ($states) => $states[$job->id]['2027-01'] === 'Already Invoiced')
+            ->assertViewHas('total', 125.0)
+            ->assertSee((string) \Illuminate\Support\Js::from(route('invoice.state', ['job' => $job, 'year' => 2027, 'month' => 'January'])), false);
+        $this->assertDatabaseCount('invoices', 2);
+    }
+
+    public function test_financial_year_changes_in_may_and_toggle_preserves_status(): void
+    {
+        foreach (['2026-04-30' => 2025, '2026-05-01' => 2026] as $today => $startYear) {
+            $this->travelTo(\Illuminate\Support\Carbon::parse($today));
+            $this->get(route('job.table', ['range' => 'financial', 'status' => 'active']))->assertOk()
+                ->assertViewHas('year', $startYear)
+                ->assertViewHas('months', fn ($months) => $months->count() === 12
+                    && $months->keys()->first() === $startYear.'-05'
+                    && $months->keys()->last() === ($startYear + 1).'-04')
+                ->assertSee(route('job.table', ['status' => 'active', 'range' => 'rolling', 'year' => $startYear]));
+        }
+        $this->getJson(route('job.table', ['range' => 'invalid']))->assertUnprocessable();
     }
 
     public function test_month_state_cycles_and_preserves_amounts_and_other_months(): void
@@ -154,8 +349,8 @@ class JobInvoicesTest extends TestCase
             'amount' => 125.50, 'state' => 'Ready To Invoice',
         ]);
         $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-23'));
-        $this->get(route('job.table'))->assertOk()->assertViewHas('states',
-            fn ($states) => $states[$job->id]['March'] === 'Ready To Invoice');
+        $this->get(route('job.table', ['range' => 'financial', 'year' => 2025]))->assertOk()->assertViewHas('states',
+            fn ($states) => $states[$job->id]['2026-03'] === 'Ready To Invoice');
     }
 
     public function test_table_browses_years_and_preserves_filter_without_highlighting_other_years(): void
@@ -169,12 +364,12 @@ class JobInvoicesTest extends TestCase
         ]);
 
         foreach ([2025, 2027] as $year) {
-            $this->get(route('job.table', ['year' => $year, 'status' => 'all']))
+            $this->get(route('job.table', ['year' => $year, 'status' => 'all', 'range' => 'financial']))
                 ->assertOk()->assertViewHas('year', $year)->assertViewHas('currentMonth', null)
-                ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['March'] === '125.50')
-                ->assertSee(route('job.table', ['year' => $year - 1, 'status' => 'all']))
-                ->assertSee(route('job.table', ['year' => $year + 1, 'status' => 'all']))
-                ->assertSee(route('job.table', ['status' => 'active', 'year' => $year]))
+                ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id][($year + 1).'-03'] === '125.50')
+                ->assertSee(route('job.table', ['year' => $year - 1, 'status' => 'all', 'range' => 'financial']))
+                ->assertSee(route('job.table', ['year' => $year + 1, 'status' => 'all', 'range' => 'financial']))
+                ->assertSee(route('job.table', ['status' => 'active', 'year' => $year, 'range' => 'financial']))
                 ->assertDontSee('aria-current="date"', false);
         }
         $this->assertDatabaseCount('invoices', 1);
@@ -462,6 +657,115 @@ class JobInvoicesTest extends TestCase
         $this->assertSame('0.00', $future['January']->amount);
         $this->assertEmpty(array_filter($service->frequenciesFor($job, $future)));
         $this->assertSame('0.00', $service->ensureYear($job, 2030)['January']->amount);
+    }
+
+    public function test_stopping_recurrence_clears_later_cell_overrides_including_future_years(): void
+    {
+        $job = $this->job();
+        $service = app(JobInvoices::class);
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '100.00';
+        $data['frequencies']['January'] = 'monthly';
+        $service->update($job, 2026, $data);
+        $current = $service->ensureYear($job, 2026);
+        $future = $service->ensureYear($job, 2027);
+        $current['January']->update(['cell_amount' => '77.00']);
+        $current['March']->update(['cell_amount' => '42.50']);
+        $future['March']->update(['cell_amount' => '65.00']);
+
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '77.00';
+        foreach (array_slice(JobInvoices::MONTHS, 1) as $month) {
+            $data['amounts'][$month] = '0.00';
+            $data['frequencies'][$month] = null;
+        }
+        $this->patch(route('invoice.update', ['job' => $job, 'year' => 2026]), $data)
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('77.00', $current['January']->fresh()->cell_amount);
+        $this->assertTrue($current['February']->fresh()->stops_recurrence);
+        foreach ($job->invoices()->where(fn ($query) => $query->where('year', '>', 2026)
+            ->orWhere(fn ($query) => $query->where('year', 2026)->where('month', '!=', 'January')))->get() as $invoice) {
+            $this->assertNull($invoice->cell_amount);
+            $this->assertSame('0.00', $invoice->amount);
+        }
+        $rows = $job->invoices()->get();
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2026)['March']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2027)['March']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2028)['March']);
+    }
+
+    public function test_recurrence_replacements_preserve_individually_modified_cells_in_current_and_future_years(): void
+    {
+        $service = app(JobInvoices::class);
+        foreach (['monthly', 'yearly'] as $frequency) {
+            $job = $this->job();
+            $data = $this->data($job, 2026);
+            $data['amounts']['January'] = '100.00';
+            $data['frequencies']['January'] = $frequency;
+            $service->update($job, 2026, $data);
+            $current = $service->ensureYear($job, 2026);
+            $future = $service->ensureYear($job, 2027);
+            $service->ensureYear($job, 2028);
+            $protectedMonth = $frequency === 'monthly' ? 'March' : 'January';
+            foreach ([2026 => '42.50', 2027 => '65.00'] as $editYear => $amount) {
+                // The yearly case protects a future January without editing the rule being replaced.
+                $editYear = $frequency === 'yearly' ? $editYear + 1 : $editYear;
+                $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => $editYear, 'month' => $protectedMonth]), ['amount' => $amount])->assertOk();
+                $edited = $job->invoices()->where('year', $editYear)->where('month', $protectedMonth)->first();
+                $this->assertTrue($edited->manually_modified);
+            }
+            $data = $this->data($job, 2026);
+            $data['amounts']['January'] = '200.00';
+            $service->update($job, 2026, $data);
+            foreach ([2026 => '42.50', 2027 => '65.00'] as $editYear => $amount) {
+                $editYear = $frequency === 'yearly' ? $editYear + 1 : $editYear;
+                $edited = $job->invoices()->where('year', $editYear)->where('month', $protectedMonth)->first();
+                $this->assertSame($amount, $edited->cell_amount);
+                $this->assertTrue($edited->manually_modified);
+                $this->assertSame($amount, $service->amountsForYear($job->invoices()->get(), $editYear)[$protectedMonth]);
+            }
+            $this->assertSame('200.00', $current['January']->fresh()->amount);
+            if ($frequency === 'monthly') {
+                $this->assertSame('200.00', $current['April']->fresh()->amount);
+                $this->assertSame('200.00', $future['April']->fresh()->amount);
+            }
+            // Saving the effective amounts without edits must keep the individual flags and values.
+            $invoices = $service->ensureYear($job, 2027);
+            $service->update($job, 2027, [
+                'amounts' => $invoices->map(fn ($invoice) => $invoice->cell_amount ?? $invoice->amount)->all(),
+                'frequencies' => array_filter($service->frequenciesFor($job, $invoices)),
+            ]);
+            $this->assertTrue($invoices[$protectedMonth]->fresh()->manually_modified);
+            $this->assertSame($frequency === 'monthly' ? '65.00' : '42.50', $invoices[$protectedMonth]->fresh()->cell_amount);
+        }
+    }
+
+    public function test_only_explicit_replacements_clear_unprotected_overrides(): void
+    {
+        $job = $this->job();
+        $service = app(JobInvoices::class);
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '100.00';
+        $data['frequencies']['January'] = 'monthly';
+        $service->update($job, 2026, $data);
+        $current = $service->ensureYear($job, 2026);
+        $future = $service->ensureYear($job, 2027);
+        $current['March']->update(['cell_amount' => '42.50']);
+        $future['March']->update(['cell_amount' => '65.00']);
+        $service->update($job, 2026, [
+            'amounts' => $current->map(fn ($invoice) => $invoice->cell_amount ?? $invoice->amount)->all(),
+            'frequencies' => array_filter($service->frequenciesFor($job, $current)),
+        ]);
+        $this->assertSame('42.50', $current['March']->fresh()->cell_amount);
+        $this->assertSame('65.00', $future['March']->fresh()->cell_amount);
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '200.00';
+        $service->update($job, 2026, $data);
+        $this->assertNull($current['March']->fresh()->cell_amount);
+        $this->assertNull($future['March']->fresh()->cell_amount);
+        $this->assertSame('200.00', $current['March']->fresh()->amount);
+        $this->assertSame('200.00', $future['March']->fresh()->amount);
     }
 
     public function test_clearing_yearly_frequency_in_a_later_year_preserves_the_earlier_rule(): void

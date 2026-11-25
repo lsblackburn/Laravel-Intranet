@@ -167,13 +167,22 @@ class WorkJobController extends Controller
                     $previous = $before->get($invoice->id);
                     $details = [];
 
-                    foreach (['amount', 'frequency', 'recurring', 'stops_recurrence'] as $field) {
+                    $oldEffectiveAmount = $previous->cell_amount ?? $previous->amount;
+                    $newEffectiveAmount = $invoice->cell_amount ?? $invoice->amount;
+                    if (($previous->cell_amount !== null || $invoice->cell_amount !== null)
+                        && $oldEffectiveAmount !== $newEffectiveAmount) {
+                        $details[] = "effective amount from {$oldEffectiveAmount} to {$newEffectiveAmount}";
+                    }
+
+                    foreach (['amount', 'cell_amount', 'frequency', 'recurring', 'stops_recurrence'] as $field) {
                         if ($previous->getAttribute($field) !== $invoice->getAttribute($field)) {
                             $old = $previous->getAttribute($field);
                             $new = $invoice->getAttribute($field);
-                            $label = str_replace('_', ' ', $field);
+                            $label = $field === 'cell_amount' ? 'override amount' : str_replace('_', ' ', $field);
                             $old = is_bool($old) ? ($old ? 'yes' : 'no') : $old;
                             $new = is_bool($new) ? ($new ? 'yes' : 'no') : $new;
+                            $old ??= 'none';
+                            $new ??= 'none';
                             $details[] = "{$label} from {$old} to {$new}";
                         }
                     }
@@ -195,6 +204,34 @@ class WorkJobController extends Controller
 
         return redirect()->route('invoice.form', ['job' => $job, 'year' => $year])
             ->with('success', 'Invoices updated successfully.');
+    }
+
+    public function invoiceAmount(Request $request, WorkJob $job, int $year, string $month): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($year >= 1901 && $year <= 2155 && in_array($month, JobInvoices::MONTHS, true), 404);
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'decimal:0,2', 'between:-9999999999.99,9999999999.99'],
+        ]);
+
+        $invoice = DB::transaction(function () use ($job, $year, $month, $data) {
+            $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+            $invoice = app(JobInvoices::class)->ensureMonth($job, $year, $month);
+            $invoice->cell_amount = $data['amount'];
+            $invoice->manually_modified = true;
+            $invoice->save();
+
+            return $invoice;
+        });
+
+        if ($invoice->wasChanged('cell_amount')) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(), subject: $invoice, action: 'invoice_amount_updated',
+                description: "changed the {$month} {$year} invoice amount for job {$job->title} from "
+                    .($invoice->getPrevious()['cell_amount'] ?? $invoice->amount)." to {$invoice->cell_amount}",
+            );
+        }
+
+        return response()->json(['amount' => $invoice->cell_amount]);
     }
 
     public function invoiceState(Request $request, WorkJob $job, int $year, string $month): \Illuminate\Http\JsonResponse
@@ -225,37 +262,91 @@ class WorkJobController extends Controller
         return response()->json(['state' => $invoice->state]);
     }
 
-    public function tableView(Request $request): View
+    public function tableView(Request $request): View|\Symfony\Component\HttpFoundation\StreamedResponse
     {
         $request->validate([
             'status' => ['nullable', 'in:all,active,complete'],
             'year' => ['nullable', 'integer', 'between:1901,2155'],
+            'range' => ['nullable', 'in:rolling,financial'],
+            'export' => ['nullable', 'in:csv'],
         ]);
         $status = $request->input('status', 'all');
-        $today = now();
-        $year = (int) ($request->input('year') ?? $today->year);
-        $currentMonth = $year === $today->year ? $today->format('F') : null;
-        $months = JobInvoices::MONTHS;
+        $today = now()->startOfMonth();
+        $range = $request->input('range', 'rolling');
+        $financialYear = $today->month >= 5 ? $today->year : $today->year - 1;
+        $year = (int) ($request->input('year') ?? $financialYear);
+        $start = $range === 'financial'
+            ? $today->copy()->setDate($year, 5, 1)
+            : $today->copy()->subMonths(3);
+        $months = collect(range(0, $range === 'financial' ? 11 : 6))
+            ->mapWithKeys(function ($offset) use ($start) {
+                $date = $start->copy()->addMonths($offset);
+
+                return [$date->format('Y-m') => $date];
+            });
+        $currentMonth = $months->has($today->format('Y-m')) ? $today->format('Y-m') : null;
+        $periodLabel = $months->first()->format('M Y').' – '.$months->last()->format('M Y');
+        $displayYears = $months->map->year->unique()->values();
         $jobs = WorkJob::with('client')
             ->when($status === 'active', fn ($query) => $query->where('active', true)->where('completed', false))
             ->when($status === 'complete', fn ($query) => $query->where('completed', true))
             ->orderBy('project_type')->orderBy('title')->get();
         $invoices = Invoice::whereIn('work_job_id', $jobs->modelKeys())
-            ->where('year', '<=', $year)
-            ->where(fn ($query) => $query->where('year', $year)
+            ->where('year', '<=', $displayYears->max())
+            ->where(fn ($query) => $query->whereIn('year', $displayYears)
                 ->orWhere('recurring', true)->orWhere('stops_recurrence', true))
             ->get()->groupBy('work_job_id');
-        $amounts = $jobs->mapWithKeys(fn ($job) => [
-            $job->id => app(JobInvoices::class)->amountsForYear($invoices->get($job->id, collect()), $year),
-        ]);
-        $states = $invoices->map(fn ($rows) => $rows->where('year', $year)->pluck('state', 'month'));
+        $amounts = $jobs->mapWithKeys(function ($job) use ($invoices, $displayYears, $months) {
+            $yearAmounts = $displayYears->mapWithKeys(fn ($displayYear) => [
+                $displayYear => app(JobInvoices::class)->amountsForYear($invoices->get($job->id, collect()), $displayYear),
+            ]);
+
+            return [$job->id => $months->map(fn ($date) => $yearAmounts[$date->year][$date->format('F')])];
+        });
+        $states = $invoices->map(fn ($rows) => $months->map(fn ($date) => $rows
+            ->first(fn ($invoice) => (int) $invoice->year === $date->year && $invoice->month === $date->format('F'))?->state ?? 'In Progress'));
         $clientGroups = $jobs->groupBy('client_id')
             ->sortBy(fn ($group) => mb_strtolower($group->first()->client?->name ?? 'Unassigned'));
 
         $total = $amounts->sum(fn ($values) => $values->sum());
+        $monthlyTotals = $months->map(fn ($date, $month) => $amounts->sum(fn ($values) => (float) $values[$month]));
         $activeCount = $jobs->filter(fn ($job) => $job->active && ! $job->completed)->count();
 
-        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states'));
+        if ($request->input('export') === 'csv') {
+            $filename = 'job-invoices-'.$months->first()->format('Y-m').'-to-'.$months->last()->format('Y-m').'-'.$status.'.csv';
+
+            return response()->streamDownload(function () use ($clientGroups, $months, $amounts, $monthlyTotals, $total) {
+                $output = fopen('php://output', 'w');
+                // A BOM lets spreadsheet applications recognise UTF-8 client and project names.
+                fwrite($output, "\xEF\xBB\xBF");
+                $write = function (array $row) use ($output) {
+                    foreach (array_slice($row, 0, 3, true) as $key => $value) {
+                        // Treat names as text even when they start with spreadsheet formula characters.
+                        if (is_string($value) && preg_match('/^[\s]*[=+@-]/u', $value)) {
+                            $row[$key] = "'".$value;
+                        }
+                    }
+                    fputcsv($output, $row, ',', '"', '', "\r\n");
+                };
+                $money = fn ($value) => number_format((float) $value, 2, '.', '');
+                $totals = ['Total', '', '', $money($total), ...$monthlyTotals->map($money)->all()];
+                $write(['Client', 'Project type', 'Project / Item', 'Total (GBP)', ...$months->map(fn ($date) => $date->format('M Y').' (GBP)')->values()->all()]);
+                $write($totals);
+                foreach ($clientGroups as $clientJobs) {
+                    $client = $clientJobs->first()->client?->name ?? 'Unassigned';
+                    foreach ($clientJobs->groupBy('project_type') as $projectType => $jobs) {
+                        foreach ($jobs as $job) {
+                            $values = $amounts[$job->id];
+                            $write([$client, $projectType ?: 'Unassigned', $job->title, $money($values->sum()), ...$values->map($money)->values()->all()]);
+                        }
+                    }
+                }
+                $write($totals);
+                fclose($output);
+            }, $filename, ['Content-Type' => 'text/csv; charset=UTF-8']);
+        }
+
+        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'monthlyTotals', 'activeCount', 'states', 'range', 'periodLabel', 'financialYear'));
     }
 
     public function destroy(Request $request, WorkJob $job): RedirectResponse

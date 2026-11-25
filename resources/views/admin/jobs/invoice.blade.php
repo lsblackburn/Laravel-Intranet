@@ -66,7 +66,7 @@
                     @if (session('success'))
                         <p role="status" class="mb-4 text-sm text-(--color-success-text)">{{ session('success') }}</p>
                     @endif
-                    <p class="mb-4 text-sm text-(--color-subtletext)">Choose a frequency to repeat a change. Click the selected frequency again to stop recurrence and reset amounts to &pound;0 from that month onward, including future years. Monthly changes replace every later month, including other values entered below.</p>
+                    <p class="mb-4 text-sm text-(--color-subtletext)">Choose a frequency to repeat a change. Monthly and yearly changes leave individually edited amounts unchanged. Click the selected frequency again to stop recurrence and reset all amounts to &pound;0 from that month onward, including individual edits and future years.</p>
                     <form method="post" action="{{ route('invoice.update', ['job' => $job, 'year' => $year]) }}" class="space-y-6"
                         x-data="{
                             total: '0.00',
@@ -130,7 +130,7 @@
                                             <x-text-input id="amount-{{ $month }}" class="block w-full max-w-64 tabular-nums" type="number" required placeholder="0.00"
                                                 step="0.01" name="amounts[{{ $month }}]"
                                                 aria-label="{{ $month }} {{ $year }} invoice amount"
-                                                :value="old('amounts.'.$month, $invoices->get($month)?->amount)" />
+                                                :value="old('amounts.'.$month, ($invoices->get($month)?->cell_amount ?? $invoices->get($month)?->amount))" />
                                             <x-input-error :messages="$errors->get('amounts.'.$month)" class="mt-2" />
 
                                         </td>
@@ -162,7 +162,7 @@
                                     <tr>
                                         <th scope="row" class="px-5 py-5 text-left font-semibold sm:px-6">Total ({{ $year }})</th>
                                         <td colspan="2" class="px-5 py-5 text-lg font-semibold tabular-nums text-(--color-primary) sm:px-6">
-                                            &pound;<span x-text="total">{{ number_format(collect($months)->sum(fn ($month) => (float) old('amounts.'.$month, $invoices->get($month)?->amount)), 2) }}</span>
+                                            &pound;<span x-text="total">{{ number_format(collect($months)->sum(fn ($month) => (float) old('amounts.'.$month, ($invoices->get($month)?->cell_amount ?? $invoices->get($month)?->amount))), 2) }}</span>
                                         </td>
                                     </tr>
                                 </tfoot>

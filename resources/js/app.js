@@ -11,8 +11,33 @@ window.Alpine = Alpine;
 
 Alpine.data('ajaxList', ajaxList);
 
-Alpine.data('invoiceState', (state, url, token) => ({
-    state, saving: false, error: '',
+Alpine.data('invoiceState', (state, url, token, amountUrl, amount) => ({
+    state, amount, draft: amount, saving: false, error: '',
+    edit() {
+        this.draft = this.amount;
+        this.error = '';
+        this.editingCell = amountUrl;
+        this.$nextTick(() => { this.$refs.amount.focus(); this.$refs.amount.select(); });
+    },
+    async saveAmount() {
+        if (this.saving || !this.$refs.amount.reportValidity()) return;
+        this.saving = true;
+        this.error = '';
+        try {
+            const response = await fetch(amountUrl, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': token },
+                body: JSON.stringify({ amount: this.draft }),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.errors?.amount?.[0] || 'Could not save amount. Please try again.');
+            // Refresh all monthly, project and client totals from the saved values.
+            window.location.reload();
+        } catch (error) {
+            this.error = error.message || 'Could not save amount. Please try again.';
+            this.saving = false;
+        }
+    },
     async cycle() {
         if (this.saving) return;
         const states = ['In Progress', 'Ready To Invoice', 'Already Invoiced'];

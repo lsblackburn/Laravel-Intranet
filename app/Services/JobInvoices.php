@@ -21,7 +21,7 @@ class JobInvoices
             ->sortByDesc(fn (Invoice $invoice) => $this->position($invoice));
 
         return collect(self::MONTHS)->mapWithKeys(fn ($month) => [
-            $month => $existing->get($month)?->amount ?? $this->ruleFor($year, $month, $rules)?->amount ?? '0.00',
+            $month => $existing->get($month)?->cell_amount ?? $existing->get($month)?->amount ?? $this->ruleFor($year, $month, $rules)?->amount ?? '0.00',
         ]);
     }
 
@@ -48,20 +48,32 @@ class JobInvoices
     }
 
     // The caller locks the job inside a transaction to serialize creation and updates.
+    public function ensureMonth(WorkJob $job, int $year, string $month): Invoice
+    {
+        return $this->createMonth($job, $year, $month, $this->rules($job));
+    }
+
+    private function createMonth(WorkJob $job, int $year, string $month, Collection $rules): Invoice
+    {
+        $rule = $this->ruleFor($year, $month, $rules);
+
+        return Invoice::firstOrCreate([
+            'work_job_id' => $job->id, 'year' => $year, 'month' => $month,
+        ], [
+            'client_id' => $job->client_id,
+            'amount' => $rule?->amount ?? '0.00',
+            'frequency' => $rule?->frequency ?? 'yearly',
+            'recurring' => false,
+        ]);
+    }
+
+    // The caller locks the job inside a transaction to serialize creation and updates.
     public function ensureYear(WorkJob $job, int $year): Collection
     {
         $rules = $this->rules($job);
 
         foreach (self::MONTHS as $month) {
-            $rule = $this->ruleFor($year, $month, $rules);
-            Invoice::firstOrCreate([
-                'work_job_id' => $job->id, 'year' => $year, 'month' => $month,
-            ], [
-                'client_id' => $job->client_id,
-                'amount' => $rule?->amount ?? '0.00',
-                'frequency' => $rule?->frequency ?? 'yearly',
-                'recurring' => false,
-            ]);
+            $this->createMonth($job, $year, $month, $rules);
         }
 
         return Invoice::where('work_job_id', $job->id)->where('year', $year)->get()->keyBy('month');
@@ -74,7 +86,7 @@ class JobInvoices
         return $invoices->map(function (Invoice $invoice) use ($rules) {
             $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $rules);
 
-            return $rule && $rule->amount === $invoice->amount && $rule->frequency === $invoice->frequency
+            return $rule && $rule?->amount === $invoice->amount && $rule->frequency === $invoice->frequency
                 ? $rule->frequency : null;
         })->all();
     }
@@ -91,20 +103,28 @@ class JobInvoices
                 $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $previousRules);
 
                 return ! $invoice->recurring && ! $invoice->stops_recurrence && $rule
-                    && $invoice->amount === $rule->amount && $invoice->frequency === $rule->frequency;
+                    && $invoice->amount === $rule?->amount && $invoice->frequency === $rule->frequency;
             })->mapWithKeys(fn (Invoice $invoice) => [$invoice->id => true])->all();
         $localChanges = [];
+        $replacements = [];
 
         foreach (self::MONTHS as $month) {
             $invoice = $invoices->get($month);
             $amount = number_format((float) $data['amounts'][$month], 2, '.', '');
             $frequency = $data['frequencies'][$month] ?? null;
 
+            if ($invoice->cell_amount !== null) {
+                if ($invoice->cell_amount === $amount && ($followingFrequencies[$month] ?? null) === $frequency) {
+                    continue;
+                }
+                $invoice->update(['cell_amount' => null]);
+            }
+
             if ($frequency === null) {
                 if (($followingFrequencies[$month] ?? null) !== null) {
                     foreach (Invoice::where('work_job_id', $job->id)->where('year', '>=', $year)->get() as $laterInvoice) {
                         if ($this->position($laterInvoice) >= $this->position($invoice)) {
-                            $laterInvoice->update(['amount' => '0.00', 'recurring' => false, 'stops_recurrence' => false]);
+                            $laterInvoice->update(['amount' => '0.00', 'cell_amount' => null, 'manually_modified' => false, 'recurring' => false, 'stops_recurrence' => false]);
                         }
                     }
                     $invoice->update(['amount' => '0.00', 'recurring' => false, 'stops_recurrence' => true]);
@@ -112,7 +132,7 @@ class JobInvoices
                 }
 
                 if ($invoice->amount !== $amount) {
-                    $invoice->update(['amount' => $amount, 'recurring' => false]);
+                    $invoice->update(['amount' => $amount, 'recurring' => false, 'manually_modified' => true]);
                     $localChanges[] = $invoice->id;
                 }
 
@@ -131,7 +151,8 @@ class JobInvoices
                 }
             }
 
-            $invoice->update(['amount' => $amount, 'frequency' => $frequency, 'recurring' => true, 'stops_recurrence' => false]);
+            $invoice->update(['amount' => $amount, 'frequency' => $frequency, 'recurring' => true, 'stops_recurrence' => false, 'manually_modified' => false]);
+            $replacements[] = ['position' => $this->position($invoice), 'month' => $month, 'frequency' => $frequency];
 
             if ($frequency === 'monthly') {
                 break;
@@ -141,14 +162,17 @@ class JobInvoices
         $rules = $this->rules($job);
         foreach (Invoice::where('work_job_id', $job->id)->where('year', '>=', $year)->get() as $invoice) {
             $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $rules);
-            if ($invoice->recurring || $invoice->stops_recurrence || in_array($invoice->id, $localChanges, true)) {
+            if ($invoice->recurring || $invoice->stops_recurrence || $invoice->manually_modified || in_array($invoice->id, $localChanges, true)) {
                 continue;
             }
 
             if ($rule || isset($inheritedIds[$invoice->id])) {
+                $replaced = collect($replacements)->contains(fn ($replacement) => $this->position($invoice) > $replacement['position']
+                    && ($replacement['frequency'] === 'monthly' || $invoice->month === $replacement['month']));
                 $invoice->update([
                     'amount' => $rule?->amount ?? '0.00',
                     'frequency' => $rule?->frequency ?? 'yearly',
+                    'cell_amount' => $replaced ? null : $invoice->cell_amount,
                 ]);
             }
         }
