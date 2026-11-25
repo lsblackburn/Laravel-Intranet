@@ -21,7 +21,8 @@
 
             <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-[18px] pb-5">
 
-                <section aria-labelledby="outstanding-invoices-heading" class="flex flex-col items-stretch rounded-xl border border-(--color-border) bg-(--color-card) p-5 md:px-[26px] md:py-6 shadow-(--workspace-shadow)">
+                <a class="flex flex-col items-stretch rounded-xl border border-(--color-border) bg-(--color-card) p-5 md:px-[26px] md:py-6 shadow-(--workspace-shadow) transition-colors hover:border-(--color-primary)"
+                href="{{ route('job.table') }}">
                     <h2 id="outstanding-invoices-heading" class="text-[11px] font-semibold tracking-[.12em] uppercase text-(--color-subtletext)">Outstanding invoices</h2>
                     <p class="mt-2 text-sm text-(--color-subtletext)">{{ $previousMonth->format('F Y') }}</p>
 
@@ -29,13 +30,13 @@
                         <ul class="my-4 divide-y divide-(--color-border)">
                             @foreach ($outstandingInvoices as $outstanding)
                                 <li>
-                                    <a href="{{ route('job.table')}}" class="flex items-start justify-between gap-4 py-3 hover:text-(--color-primary)">
+                                    <p class="flex items-start justify-between gap-4 py-3 hover:text-(--color-primary)">
                                         <span>
                                             <span class="block font-medium">{{ $outstanding['job']->title }}</span>
                                             <span class="block text-xs text-(--color-subtletext)">{{ $outstanding['job']->client?->name ?? 'Unassigned' }}</span>
                                         </span>
                                         <span class="whitespace-nowrap font-semibold tabular-nums">&pound;{{ number_format((float) $outstanding['amount'], 2) }}</span>
-                                    </a>
+                                    </p>
                                 </li>
                             @endforeach
                         </ul>
@@ -43,10 +44,13 @@
                         <p class="my-5">All previous month's invoices have been invoiced.</p>
                     @endif
 
-                    <a href="{{ route('job.table') }}" class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext) hover:text-(--color-primary)">View job invoices <span aria-hidden="true">&#8599;</span></a>
-                </section>
+                    <span
+                    class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext)">View job invoices <span aria-hidden="true">&#8599;</span></span>
+                </a>
 
-                <section aria-labelledby="monthly-invoices-heading" class="flex flex-col items-stretch rounded-xl border border-(--color-border) bg-(--color-card) p-5 md:px-[26px] md:py-6 shadow-(--workspace-shadow)">
+                <a class="flex flex-col items-stretch rounded-xl border border-(--color-border) bg-(--color-card) p-5 md:px-[26px] md:py-6 shadow-(--workspace-shadow) transition-colors hover:border-(--color-primary)"
+                href="{{ route('job.table') }}">
+
                     <h2 id="monthly-invoices-heading" class="text-[11px] font-semibold tracking-[.12em] uppercase text-(--color-subtletext)">This month's invoices</h2>
                     <p class="mt-2 text-sm text-(--color-subtletext)">{{ $currentMonth->format('F Y') }}</p>
 
@@ -58,8 +62,9 @@
                     </div>
                     <p class="mt-2 mb-5 text-sm text-(--color-subtletext)">{{ $invoicedPercentage }}% invoiced</p>
 
-                    <a href="{{ route('job.table') }}" class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext) hover:text-(--color-primary)">View job invoices <span aria-hidden="true">&#8599;</span></a>
-                </section>
+                    <span
+                    class="mt-auto flex items-center justify-between gap-3 border-t border-(--color-border) pt-3.5 text-xs text-(--color-subtletext)">View job invoices <span aria-hidden="true">&#8599;</span></span>
+                </a>
 
 
             </div>
