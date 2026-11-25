@@ -596,6 +596,42 @@ class JobInvoicesTest extends TestCase
         $this->assertSame('0.00', $service->ensureYear($job, 2030)['January']->amount);
     }
 
+    public function test_stopping_recurrence_clears_later_cell_overrides_including_future_years(): void
+    {
+        $job = $this->job();
+        $service = app(JobInvoices::class);
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '100.00';
+        $data['frequencies']['January'] = 'monthly';
+        $service->update($job, 2026, $data);
+        $current = $service->ensureYear($job, 2026);
+        $future = $service->ensureYear($job, 2027);
+        $current['January']->update(['cell_amount' => '77.00']);
+        $current['March']->update(['cell_amount' => '42.50']);
+        $future['March']->update(['cell_amount' => '65.00']);
+
+        $data = $this->data($job, 2026);
+        $data['amounts']['January'] = '77.00';
+        foreach (array_slice(JobInvoices::MONTHS, 1) as $month) {
+            $data['amounts'][$month] = '0.00';
+            $data['frequencies'][$month] = null;
+        }
+        $this->patch(route('invoice.update', ['job' => $job, 'year' => 2026]), $data)
+            ->assertSessionHasNoErrors()->assertRedirect();
+
+        $this->assertSame('77.00', $current['January']->fresh()->cell_amount);
+        $this->assertTrue($current['February']->fresh()->stops_recurrence);
+        foreach ($job->invoices()->where(fn ($query) => $query->where('year', '>', 2026)
+            ->orWhere(fn ($query) => $query->where('year', 2026)->where('month', '!=', 'January')))->get() as $invoice) {
+            $this->assertNull($invoice->cell_amount);
+            $this->assertSame('0.00', $invoice->amount);
+        }
+        $rows = $job->invoices()->get();
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2026)['March']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2027)['March']);
+        $this->assertSame('0.00', $service->amountsForYear($rows, 2028)['March']);
+    }
+
     public function test_clearing_yearly_frequency_in_a_later_year_preserves_the_earlier_rule(): void
     {
         $job = $this->job();

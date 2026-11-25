@@ -111,7 +111,7 @@ class JobInvoices
                 if (($followingFrequencies[$month] ?? null) !== null) {
                     foreach (Invoice::where('work_job_id', $job->id)->where('year', '>=', $year)->get() as $laterInvoice) {
                         if ($this->position($laterInvoice) >= $this->position($invoice)) {
-                            $laterInvoice->update(['amount' => '0.00', 'recurring' => false, 'stops_recurrence' => false]);
+                            $laterInvoice->update(['amount' => '0.00', 'cell_amount' => null, 'recurring' => false, 'stops_recurrence' => false]);
                         }
                     }
                     $invoice->update(['amount' => '0.00', 'recurring' => false, 'stops_recurrence' => true]);
