@@ -30,9 +30,8 @@ Route::middleware(['auth', '2fa.remember'])->group(function () {
     Route::post('/2fa/enable', [TwoFactorController::class, 'enable'])->name('2fa.enable');
     Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
 
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->middleware(['verified'])->name('dashboard');
+    Route::get('/dashboard', \App\Http\Controllers\DashboardController::class)
+        ->middleware(['verified'])->name('dashboard');
 
     Route::get('/calendar', function () {
         return view('calendar');
