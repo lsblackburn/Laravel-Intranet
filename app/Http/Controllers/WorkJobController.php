@@ -230,32 +230,50 @@ class WorkJobController extends Controller
         $request->validate([
             'status' => ['nullable', 'in:all,active,complete'],
             'year' => ['nullable', 'integer', 'between:1901,2155'],
+            'range' => ['nullable', 'in:rolling,financial'],
         ]);
         $status = $request->input('status', 'all');
-        $today = now();
-        $year = (int) ($request->input('year') ?? $today->year);
-        $currentMonth = $year === $today->year ? $today->format('F') : null;
-        $months = JobInvoices::MONTHS;
+        $today = now()->startOfMonth();
+        $range = $request->input('range', 'rolling');
+        $financialYear = $today->month >= 5 ? $today->year : $today->year - 1;
+        $year = (int) ($request->input('year') ?? $financialYear);
+        $start = $range === 'financial'
+            ? $today->copy()->setDate($year, 5, 1)
+            : $today->copy()->subMonths(3);
+        $months = collect(range(0, $range === 'financial' ? 11 : 6))
+            ->mapWithKeys(function ($offset) use ($start) {
+                $date = $start->copy()->addMonths($offset);
+
+                return [$date->format('Y-m') => $date];
+            });
+        $currentMonth = $months->has($today->format('Y-m')) ? $today->format('Y-m') : null;
+        $periodLabel = $months->first()->format('M Y').' – '.$months->last()->format('M Y');
+        $displayYears = $months->map->year->unique()->values();
         $jobs = WorkJob::with('client')
             ->when($status === 'active', fn ($query) => $query->where('active', true)->where('completed', false))
             ->when($status === 'complete', fn ($query) => $query->where('completed', true))
             ->orderBy('project_type')->orderBy('title')->get();
         $invoices = Invoice::whereIn('work_job_id', $jobs->modelKeys())
-            ->where('year', '<=', $year)
-            ->where(fn ($query) => $query->where('year', $year)
+            ->where('year', '<=', $displayYears->max())
+            ->where(fn ($query) => $query->whereIn('year', $displayYears)
                 ->orWhere('recurring', true)->orWhere('stops_recurrence', true))
             ->get()->groupBy('work_job_id');
-        $amounts = $jobs->mapWithKeys(fn ($job) => [
-            $job->id => app(JobInvoices::class)->amountsForYear($invoices->get($job->id, collect()), $year),
-        ]);
-        $states = $invoices->map(fn ($rows) => $rows->where('year', $year)->pluck('state', 'month'));
+        $amounts = $jobs->mapWithKeys(function ($job) use ($invoices, $displayYears, $months) {
+            $yearAmounts = $displayYears->mapWithKeys(fn ($displayYear) => [
+                $displayYear => app(JobInvoices::class)->amountsForYear($invoices->get($job->id, collect()), $displayYear),
+            ]);
+
+            return [$job->id => $months->map(fn ($date) => $yearAmounts[$date->year][$date->format('F')])];
+        });
+        $states = $invoices->map(fn ($rows) => $months->map(fn ($date) => $rows
+            ->first(fn ($invoice) => (int) $invoice->year === $date->year && $invoice->month === $date->format('F'))?->state ?? 'In Progress'));
         $clientGroups = $jobs->groupBy('client_id')
             ->sortBy(fn ($group) => mb_strtolower($group->first()->client?->name ?? 'Unassigned'));
 
         $total = $amounts->sum(fn ($values) => $values->sum());
         $activeCount = $jobs->filter(fn ($job) => $job->active && ! $job->completed)->count();
 
-        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states'));
+        return view('admin.jobs.table', compact('clientGroups', 'amounts', 'year', 'currentMonth', 'months', 'status', 'total', 'activeCount', 'states', 'range', 'periodLabel', 'financialYear'));
     }
 
     public function destroy(Request $request, WorkJob $job): RedirectResponse

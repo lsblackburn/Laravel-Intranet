@@ -24,22 +24,23 @@
 
                         @foreach (['all' => 'All Projects', 'active' => 'Active', 'complete' => 'Complete'] as $value => $label)
 
-                            <a href="{{ route('job.table', ['status' => $value, 'year' => $year]) }}" class="rounded-lg px-4 py-2 text-[13px] text-(--color-subtletext) hover:bg-(--color-surface-alt) aria-[current=page]:bg-(--color-primary) aria-[current=page]:text-(--color-background)" @if ($status === $value) aria-current="page" @endif>{{ $label }}</a>
+                            <a href="{{ route('job.table', ['status' => $value, 'year' => $year, 'range' => $range]) }}" class="rounded-lg px-4 py-2 text-[13px] text-(--color-subtletext) hover:bg-(--color-surface-alt) aria-[current=page]:bg-(--color-primary) aria-[current=page]:text-(--color-background)" @if ($status === $value) aria-current="page" @endif>{{ $label }}</a>
 
                         @endforeach
 
                     </nav>
 
-                    <nav aria-label="Invoice year" class="flex flex-wrap items-center gap-2 text-sm">
-                        @if ($year > 1901)
-                            <a href="{{ route('job.table', ['year' => $year - 1, 'status' => $status]) }}" aria-label="Previous year, {{ $year - 1 }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">&larr; {{ $year - 1 }}</a>
+                    <nav aria-label="Invoice period" class="flex flex-wrap items-center gap-2 text-sm">
+                        <a href="{{ route('job.table', ['status' => $status, 'range' => $range === 'financial' ? 'rolling' : 'financial', 'year' => $year]) }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">{{ $range === 'financial' ? 'Show 7 months' : 'Show financial year (May–April)' }}</a>
+                        @if ($range === 'financial' && $year > 1901)
+                            <a href="{{ route('job.table', ['year' => $year - 1, 'status' => $status, 'range' => $range]) }}" aria-label="Previous financial year" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">&larr; {{ $year - 1 }}/{{ $year }}</a>
                         @endif
-                        <span class="rounded-lg border border-(--color-border) px-4 py-2 font-semibold">Jan {{ $year }} &ndash; Dec {{ $year }}</span>
-                        @if ($year < 2155)
-                            <a href="{{ route('job.table', ['year' => $year + 1, 'status' => $status]) }}" aria-label="Next year, {{ $year + 1 }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">{{ $year + 1 }} &rarr;</a>
+                        <span class="rounded-lg border border-(--color-border) px-4 py-2 font-semibold">{{ $periodLabel }}</span>
+                        @if ($range === 'financial' && $year < 2155)
+                            <a href="{{ route('job.table', ['year' => $year + 1, 'status' => $status, 'range' => $range]) }}" aria-label="Next financial year" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">{{ $year + 1 }}/{{ $year + 2 }} &rarr;</a>
                         @endif
-                        @if ($year !== now()->year)
-                            <a href="{{ route('job.table', ['status' => $status]) }}" class="rounded-lg px-3 py-2 text-(--color-primary) hover:bg-(--color-surface-alt)">Current year</a>
+                        @if ($range === 'financial' && $year !== $financialYear)
+                            <a href="{{ route('job.table', ['status' => $status, 'range' => $range]) }}" class="rounded-lg px-3 py-2 text-(--color-primary) hover:bg-(--color-surface-alt)">Current financial year</a>
                         @endif
                     </nav>
 
@@ -49,7 +50,7 @@
 
             <div class="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
 
-                @foreach (['Total (Year)' => '£'.number_format($total, 2), 'Clients' => $clientGroups->count(), 'Projects' => $clientGroups->sum(fn ($jobs) => $jobs->count()), 'Active Projects' => $activeCount] as $label => $value)
+                @foreach (['Total (Period)' => '£'.number_format($total, 2), 'Clients' => $clientGroups->count(), 'Projects' => $clientGroups->sum(fn ($jobs) => $jobs->count()), 'Active Projects' => $activeCount] as $label => $value)
 
                     <div class="rounded-[14px] border border-(--color-border) bg-(--color-card) shadow-(--workspace-shadow) flex items-center gap-4 px-5 py-4">
 
@@ -138,9 +139,9 @@
 
                 <div class="overflow-x-auto">
 
-                    <table class="w-full min-w-[1500px] border-separate border-spacing-0 text-[13px] [&_th]:border-r [&_th]:border-b [&_th]:border-(--color-border) [&_th]:px-3 [&_td]:border-r [&_td]:border-b [&_td]:border-(--color-border) [&_td]:px-3 [&_tbody_th]:py-2 [&_tbody_td]:py-2">
+                    <table class="w-full {{ $range === 'financial' ? 'min-w-[1500px]' : 'min-w-[1100px]' }} border-separate border-spacing-0 text-[13px] [&_th]:border-r [&_th]:border-b [&_th]:border-(--color-border) [&_th]:px-3 [&_td]:border-r [&_td]:border-b [&_td]:border-(--color-border) [&_td]:px-3 [&_tbody_th]:py-2 [&_tbody_td]:py-2">
 
-                        <caption class="sr-only">Monthly job invoice amounts grouped by client and project type for {{ $year }}. All amounts in pounds.</caption>
+                        <caption class="sr-only">Monthly job invoice amounts grouped by client and project type for {{ $periodLabel }}. All amounts in pounds.</caption>
 
                         <thead class="bg-(--color-surface-alt) [&_th]:py-3.5 [&_th]:font-semibold">
 
@@ -150,8 +151,8 @@
 
                                 <th scope="col" class="text-right tabular-nums whitespace-nowrap">Total</th>
 
-                                @foreach ($months as $month)
-                                    <th scope="col" @class(['min-w-24 text-center', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth]) @if ($month === $currentMonth) aria-current="date" @endif>{{ substr($month, 0, 3) }}<br>{{ $year }}</th>
+                                @foreach ($months as $month => $date)
+                                    <th scope="col" @class(['min-w-24 text-center', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth]) @if ($month === $currentMonth) aria-current="date" @endif>{{ $date->format('M') }}<br>{{ $date->year }}</th>
                                 @endforeach
 
                             <th scope="col">Actions</th>
@@ -179,7 +180,7 @@
 
                                     <td class="bg-(--color-primary) text-(--color-background) text-right tabular-nums whitespace-nowrap font-semibold">&pound;{{ number_format($clientJobs->sum(fn ($job) => $amounts[$job->id]->sum()), 2) }}</td>
                                     
-                                    <td colspan="13" class="bg-(--color-surface-alt)"></td>
+                                    <td colspan="{{ $months->count() + 1 }}" class="bg-(--color-surface-alt)"></td>
                                 
                                 </tr>
 
@@ -187,7 +188,7 @@
 
                                     <tr x-show="open" class="bg-(--color-surface-alt) text-[11px] tracking-[0.06em] text-(--color-subtletext) uppercase">
 
-                                        <th colspan="15" class="text-left">{{ $projectType ?: 'Unassigned' }}</th>
+                                        <th colspan="{{ $months->count() + 3 }}" class="text-left">{{ $projectType ?: 'Unassigned' }}</th>
 
                                     </tr>
 
@@ -197,19 +198,19 @@
 
                                             <th scope="row" class="text-left font-normal">
                                                 
-                                                <a class="block pl-5 hover:text-(--color-primary-hover) hover:underline" href="{{ route('invoice.form', ['job' => $job, 'year' => $year]) }}">{{ $job->title }}</a>
+                                                <a class="block pl-5 hover:text-(--color-primary-hover) hover:underline" href="{{ route('invoice.form', ['job' => $job, 'year' => $range === 'financial' ? $year : now()->year]) }}">{{ $job->title }}</a>
                                             
                                             </th>
 
                                             <td class="text-right tabular-nums whitespace-nowrap font-medium">&pound;{{ number_format($amounts[$job->id]->sum(), 2) }}</td>
 
-                                            @foreach ($months as $month)
+                                            @foreach ($months as $month => $date)
                                             
                                                 <td @class(['text-right tabular-nums whitespace-nowrap', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth])>
 
-                                                    <div x-data="invoiceState(@js($states->get($job->id)?->get($month) ?? 'In Progress'), @js(route('invoice.state', ['job' => $job, 'year' => $year, 'month' => $month])), @js(csrf_token()))">
+                                                    <div x-data="invoiceState(@js($states->get($job->id)?->get($month) ?? 'In Progress'), @js(route('invoice.state', ['job' => $job, 'year' => $date->year, 'month' => $date->format('F')])), @js(csrf_token()))">
                                                         <button type="button" @click="cycle()" :disabled="saving" :aria-busy="saving"
-                                                            :aria-label="@js($job->title.' ? '.$month.' '.$year.': ') + state + '. Click to change status.'"
+                                                            :aria-label="@js($job->title.' ? '.$date->format('F Y').': ') + state + '. Click to change status.'"
                                                             :title="state + ' ? click to change status'"
                                                             class="w-full cursor-pointer rounded px-1 py-1 text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-primary) disabled:cursor-wait disabled:opacity-50"
                                                             :class="{ 'text-(--color-text)': state === 'In Progress', 'text-(--color-success-text) font-bold': state === 'Ready To Invoice', 'text-(--color-info-text) font-bold': state === 'Already Invoiced' }">
@@ -246,7 +247,7 @@
 
                                 <tr>
 
-                                    <td colspan="15" class="py-10 text-center">No jobs to display.</td>
+                                    <td colspan="{{ $months->count() + 3 }}" class="py-10 text-center">No jobs to display.</td>
 
                                 </tr>
 

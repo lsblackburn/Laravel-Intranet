@@ -108,9 +108,9 @@ class JobInvoicesTest extends TestCase
         ]);
 
         $this->get(route('job.table'))->assertOk()
-            ->assertViewHas('year', 2027)->assertViewHas('currentMonth', 'November')
-            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['March'] === '80.00'
-                && $amounts[$job->id]['April'] === '0.00')
+            ->assertViewHas('year', 2027)->assertViewHas('currentMonth', '2027-11')
+            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['2027-08'] === '0.00'
+                && $amounts[$job->id]['2028-02'] === '0.00')
             ->assertSee('Invoice client')->assertSee('aria-current="date"', false)
             ->assertSee(route('invoice.form', ['job' => $job, 'year' => 2027]), false);
         $this->assertDatabaseCount('invoices', 2);
@@ -119,6 +119,42 @@ class JobInvoicesTest extends TestCase
     public function test_empty_invoice_table_renders(): void
     {
         $this->get(route('job.table'))->assertOk()->assertSee('No jobs to display.');
+    }
+
+    public function test_rolling_months_cross_years_and_use_each_months_amount_and_state(): void
+    {
+        $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-25'));
+        $job = $this->job();
+        foreach ([[2026, 'November', '50.00', 'In Progress'], [2027, 'January', '75.00', 'Already Invoiced']] as [$year, $month, $amount, $state]) {
+            Invoice::create([
+                'work_job_id' => $job->id, 'client_id' => $job->client_id,
+                'year' => $year, 'month' => $month, 'amount' => $amount, 'state' => $state,
+            ]);
+        }
+
+        $this->get(route('job.table'))->assertOk()
+            ->assertViewHas('months', fn ($months) => $months->keys()->all() === [
+                '2026-08', '2026-09', '2026-10', '2026-11', '2026-12', '2027-01', '2027-02',
+            ])
+            ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['2027-01'] === '75.00')
+            ->assertViewHas('states', fn ($states) => $states[$job->id]['2027-01'] === 'Already Invoiced')
+            ->assertViewHas('total', 125.0)
+            ->assertSee((string) \Illuminate\Support\Js::from(route('invoice.state', ['job' => $job, 'year' => 2027, 'month' => 'January'])), false);
+        $this->assertDatabaseCount('invoices', 2);
+    }
+
+    public function test_financial_year_changes_in_may_and_toggle_preserves_status(): void
+    {
+        foreach (['2026-04-30' => 2025, '2026-05-01' => 2026] as $today => $startYear) {
+            $this->travelTo(\Illuminate\Support\Carbon::parse($today));
+            $this->get(route('job.table', ['range' => 'financial', 'status' => 'active']))->assertOk()
+                ->assertViewHas('year', $startYear)
+                ->assertViewHas('months', fn ($months) => $months->count() === 12
+                    && $months->keys()->first() === $startYear.'-05'
+                    && $months->keys()->last() === ($startYear + 1).'-04')
+                ->assertSee(route('job.table', ['status' => 'active', 'range' => 'rolling', 'year' => $startYear]));
+        }
+        $this->getJson(route('job.table', ['range' => 'invalid']))->assertUnprocessable();
     }
 
     public function test_month_state_cycles_and_preserves_amounts_and_other_months(): void
@@ -154,8 +190,8 @@ class JobInvoicesTest extends TestCase
             'amount' => 125.50, 'state' => 'Ready To Invoice',
         ]);
         $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-23'));
-        $this->get(route('job.table'))->assertOk()->assertViewHas('states',
-            fn ($states) => $states[$job->id]['March'] === 'Ready To Invoice');
+        $this->get(route('job.table', ['range' => 'financial', 'year' => 2025]))->assertOk()->assertViewHas('states',
+            fn ($states) => $states[$job->id]['2026-03'] === 'Ready To Invoice');
     }
 
     public function test_table_browses_years_and_preserves_filter_without_highlighting_other_years(): void
@@ -169,12 +205,12 @@ class JobInvoicesTest extends TestCase
         ]);
 
         foreach ([2025, 2027] as $year) {
-            $this->get(route('job.table', ['year' => $year, 'status' => 'all']))
+            $this->get(route('job.table', ['year' => $year, 'status' => 'all', 'range' => 'financial']))
                 ->assertOk()->assertViewHas('year', $year)->assertViewHas('currentMonth', null)
-                ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id]['March'] === '125.50')
-                ->assertSee(route('job.table', ['year' => $year - 1, 'status' => 'all']))
-                ->assertSee(route('job.table', ['year' => $year + 1, 'status' => 'all']))
-                ->assertSee(route('job.table', ['status' => 'active', 'year' => $year]))
+                ->assertViewHas('amounts', fn ($amounts) => $amounts[$job->id][($year + 1).'-03'] === '125.50')
+                ->assertSee(route('job.table', ['year' => $year - 1, 'status' => 'all', 'range' => 'financial']))
+                ->assertSee(route('job.table', ['year' => $year + 1, 'status' => 'all', 'range' => 'financial']))
+                ->assertSee(route('job.table', ['status' => 'active', 'year' => $year, 'range' => 'financial']))
                 ->assertDontSee('aria-current="date"', false);
         }
         $this->assertDatabaseCount('invoices', 1);
