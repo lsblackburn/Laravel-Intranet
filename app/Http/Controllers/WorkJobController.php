@@ -197,6 +197,39 @@ class WorkJobController extends Controller
             ->with('success', 'Invoices updated successfully.');
     }
 
+    public function invoiceAmount(Request $request, WorkJob $job, int $year, string $month): \Illuminate\Http\JsonResponse
+    {
+        abort_unless($year >= 1901 && $year <= 2155 && in_array($month, JobInvoices::MONTHS, true), 404);
+        $data = $request->validate([
+            'amount' => ['required', 'numeric', 'decimal:0,2', 'between:-9999999999.99,9999999999.99'],
+        ]);
+
+        $invoice = DB::transaction(function () use ($job, $year, $month, $data) {
+            $job = WorkJob::whereKey($job->id)->lockForUpdate()->firstOrFail();
+            $invoice = $job->invoices()->where('year', $year)->where('month', $month)->first();
+            if (! $invoice) {
+                $amount = app(JobInvoices::class)->amountsForYear($job->invoices()->get(), $year)->get($month);
+                $invoice = $job->invoices()->create([
+                    'client_id' => $job->client_id, 'year' => $year, 'month' => $month, 'amount' => $amount,
+                ]);
+            }
+            $invoice->cell_amount = $data['amount'];
+            $invoice->save();
+
+            return $invoice;
+        });
+
+        if ($invoice->wasChanged('cell_amount')) {
+            app(ActivityLogger::class)->record(
+                actor: $request->user(), subject: $invoice, action: 'invoice_amount_updated',
+                description: "changed the {$month} {$year} invoice amount for job {$job->title} from "
+                    .($invoice->getPrevious()['cell_amount'] ?? $invoice->amount)." to {$invoice->cell_amount}",
+            );
+        }
+
+        return response()->json(['amount' => $invoice->cell_amount]);
+    }
+
     public function invoiceState(Request $request, WorkJob $job, int $year, string $month): \Illuminate\Http\JsonResponse
     {
         abort_unless($year >= 1901 && $year <= 2155 && in_array($month, JobInvoices::MONTHS, true), 404);

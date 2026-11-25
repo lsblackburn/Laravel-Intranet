@@ -121,6 +121,55 @@ class JobInvoicesTest extends TestCase
         $this->get(route('job.table'))->assertOk()->assertSee('No jobs to display.');
     }
 
+    public function test_table_amount_edit_changes_only_one_cell_without_changing_status_or_other_months(): void
+    {
+        $job = $this->job();
+        $rule = Invoice::create([
+            'work_job_id' => $job->id, 'client_id' => $job->client_id,
+            'year' => 2026, 'month' => 'November', 'amount' => '100.00',
+            'frequency' => 'monthly', 'recurring' => true, 'state' => 'Already Invoiced',
+        ]);
+        $service = app(JobInvoices::class);
+        $before = $service->amountsForYear($job->invoices()->get(), 2027)->all();
+        $url = route('invoice.amount', ['job' => $job, 'year' => 2026, 'month' => 'November']);
+
+        $this->patchJson($url, ['amount' => '42.50', 'state' => 'In Progress'])
+            ->assertOk()->assertJson(['amount' => '42.50']);
+        $this->assertSame('Already Invoiced', $rule->fresh()->state);
+        $this->assertSame('100.00', $rule->fresh()->amount);
+        $this->assertSame('42.50', $service->amountsForYear($job->invoices()->get(), 2026)['November']);
+        $this->assertSame('100.00', $service->amountsForYear($job->invoices()->get(), 2026)['December']);
+        $this->assertSame($before, $service->amountsForYear($job->invoices()->get(), 2027)->all());
+        $this->assertDatabaseCount('invoices', 1);
+
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 2027, 'month' => 'January']), ['amount' => '0'])
+            ->assertOk()->assertJson(['amount' => '0.00']);
+        $this->assertDatabaseCount('invoices', 2);
+        $values = $service->amountsForYear($job->invoices()->get(), 2027);
+        $this->assertSame('0.00', $values['January']);
+        $this->assertSame('100.00', $values['February']);
+        $this->get(route('invoice.form', ['job' => $job, 'year' => 2026]))->assertOk()->assertSee('42.50');
+        $invoices = $service->ensureYear($job, 2026);
+        $service->update($job, 2026, [
+            'amounts' => $invoices->map(fn ($invoice) => $invoice->cell_amount ?? $invoice->amount)->all(),
+            'frequencies' => array_filter($service->frequenciesFor($job, $invoices)),
+        ]);
+        $this->assertSame('42.50', $rule->fresh()->cell_amount);
+        $this->assertSame('100.00', $rule->fresh()->amount);
+    }
+
+    public function test_table_amount_edit_rejects_invalid_values_without_writing_invoices(): void
+    {
+        $job = $this->job();
+        $url = route('invoice.amount', ['job' => $job, 'year' => 2026, 'month' => 'November']);
+        foreach ([null, 'invalid', '1.001', '10000000000'] as $amount) {
+            $this->patchJson($url, ['amount' => $amount])->assertUnprocessable()->assertJsonValidationErrors('amount');
+        }
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 1900, 'month' => 'November']), ['amount' => 1])->assertNotFound();
+        $this->patchJson(route('invoice.amount', ['job' => $job, 'year' => 2026, 'month' => 'invalid']), ['amount' => 1])->assertNotFound();
+        $this->assertDatabaseCount('invoices', 0);
+    }
+
     public function test_rolling_months_cross_years_and_use_each_months_amount_and_state(): void
     {
         $this->travelTo(\Illuminate\Support\Carbon::parse('2026-11-25'));

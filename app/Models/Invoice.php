@@ -14,6 +14,7 @@ class Invoice extends Model
     
     protected $fillable = [
         'amount',
+        'cell_amount',
         'work_job_id',
         'client_id',
         'year',
@@ -28,6 +29,7 @@ class Invoice extends Model
     {
         return [
             'amount' => 'decimal:2',
+            'cell_amount' => 'decimal:2',
             'recurring' => 'boolean',
             'stops_recurrence' => 'boolean',
         ];

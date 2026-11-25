@@ -4,7 +4,7 @@
             {{ __('Project Financials') }}
         </h1>
     </x-slot>
-    <main class="py-6 text-(--color-text)">
+    <main class="py-6 text-(--color-text)" x-data="{ editMode: sessionStorage.getItem('invoiceTableMode') === 'edit', editingCell: null }">
 
         <section class="max-w-7xl mx-auto py-3.5 px-4 sm:px-6 lg:px-8">
 
@@ -31,6 +31,7 @@
                     </nav>
 
                     <nav aria-label="Invoice period" class="flex flex-wrap items-center gap-2 text-sm">
+                        <button type="button" @click="editMode = !editMode; editingCell = null; sessionStorage.setItem('invoiceTableMode', editMode ? 'edit' : 'invoice')" :aria-pressed="editMode" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)" x-text="editMode ? 'Switch to invoice mode' : 'Edit amounts'">Edit amounts</button>
                         <a href="{{ route('job.table', ['status' => $status, 'range' => $range === 'financial' ? 'rolling' : 'financial', 'year' => $year]) }}" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">{{ $range === 'financial' ? 'Show 7 months' : 'Show financial year (May–April)' }}</a>
                         @if ($range === 'financial' && $year > 1901)
                             <a href="{{ route('job.table', ['year' => $year - 1, 'status' => $status, 'range' => $range]) }}" aria-label="Previous financial year" class="rounded-lg border border-(--color-border) px-3 py-2 hover:bg-(--color-surface-alt)">&larr; {{ $year - 1 }}/{{ $year }}</a>
@@ -93,7 +94,7 @@
 
             <div class="mb-3 px-5 box-border flex flex-wrap items-end justify-between gap-3 text-xs text-(--color-subtletext)">
 
-                <p class="text-(--color-text) text-xs sm:text-sm md:text-base">Click a monthly amount to cycle its invoice status. Select a project to edit amounts. All amounts in GBP.</p>
+                <p class="text-(--color-text) text-xs sm:text-sm md:text-base" x-text="editMode ? 'Edit mode: click an amount, then save to update only that cell. All amounts in GBP.' : 'Invoice mode: click a monthly amount to cycle its invoice status. All amounts in GBP.'">Invoice mode: click a monthly amount to cycle its invoice status. All amounts in GBP.</p>
 
                 <span class="flex flex-col items-center gap-2">
 
@@ -211,14 +212,21 @@
                                             
                                                 <td @class(['text-right tabular-nums whitespace-nowrap', 'bg-(--color-warning)/15 text-(--color-warning-text)' => $month === $currentMonth])>
 
-                                                    <div x-data="invoiceState(@js($states->get($job->id)?->get($month) ?? 'In Progress'), @js(route('invoice.state', ['job' => $job, 'year' => $date->year, 'month' => $date->format('F')])), @js(csrf_token()))">
-                                                        <button type="button" @click="cycle()" :disabled="saving" :aria-busy="saving"
-                                                            :aria-label="@js($job->title.' ? '.$date->format('F Y').': ') + state + '. Click to change status.'"
-                                                            :title="state + ' ? click to change status'"
+                                                    <div x-data="invoiceState(@js($states->get($job->id)?->get($month) ?? 'In Progress'), @js(route('invoice.state', ['job' => $job, 'year' => $date->year, 'month' => $date->format('F')])), @js(csrf_token()), @js(route('invoice.amount', ['job' => $job, 'year' => $date->year, 'month' => $date->format('F')])), @js($amounts[$job->id][$month]))">
+                                                        <button type="button" x-show="editingCell !== @js(route('invoice.amount', ['job' => $job, 'year' => $date->year, 'month' => $date->format('F')]))" @click="editMode ? edit() : cycle()" :disabled="saving" :aria-busy="saving"
+                                                            :aria-label="@js($job->title.' ? '.$date->format('F Y').': ') + (editMode ? 'Click to edit amount.' : state + '. Click to change status.')"
+                                                            :title="editMode ? 'Click to edit this amount only' : state + ' ? click to change status'"
                                                             class="w-full cursor-pointer rounded px-1 py-1 text-right focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-(--color-primary) disabled:cursor-wait disabled:opacity-50"
                                                             :class="{ 'text-(--color-text)': state === 'In Progress', 'text-(--color-success-text) font-bold': state === 'Ready To Invoice', 'text-(--color-info-text) font-bold': state === 'Already Invoiced' }">
                                                             &pound;{{ number_format((float) $amounts[$job->id][$month], 2) }}
                                                         </button>
+                                                        <form x-cloak x-show="editMode && editingCell === @js(route('invoice.amount', ['job' => $job, 'year' => $date->year, 'month' => $date->format('F')]))" @submit.prevent="saveAmount()" @keydown.escape.prevent="if (!saving) editingCell = null" class="min-w-32 space-y-2">
+                                                            <input x-ref="amount" x-model="draft" type="number" step="0.01" min="-9999999999.99" max="9999999999.99" required :disabled="saving" aria-label="Amount for {{ $job->title }}, {{ $date->format('F Y') }}" class="w-32 rounded border border-(--color-border) bg-(--color-card) px-2 py-1 text-right text-(--color-text)">
+                                                            <div class="flex justify-end gap-2 text-xs">
+                                                                <button type="submit" :disabled="saving" class="rounded border border-(--color-border) px-2 py-1" x-text="saving ? 'Saving…' : 'Save'">Save</button>
+                                                                <button type="button" @click="editingCell = null" :disabled="saving" class="rounded border border-(--color-border) px-2 py-1">Cancel</button>
+                                                            </div>
+                                                        </form>
                                                         <p x-cloak x-show="error" x-text="error" role="alert" class="max-w-40 whitespace-normal text-xs text-(--color-danger-text)"></p>
                                                     </div>
 

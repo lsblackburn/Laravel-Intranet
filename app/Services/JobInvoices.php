@@ -21,7 +21,7 @@ class JobInvoices
             ->sortByDesc(fn (Invoice $invoice) => $this->position($invoice));
 
         return collect(self::MONTHS)->mapWithKeys(fn ($month) => [
-            $month => $existing->get($month)?->amount ?? $this->ruleFor($year, $month, $rules)?->amount ?? '0.00',
+            $month => $existing->get($month)?->cell_amount ?? $existing->get($month)?->amount ?? $this->ruleFor($year, $month, $rules)?->amount ?? '0.00',
         ]);
     }
 
@@ -74,7 +74,7 @@ class JobInvoices
         return $invoices->map(function (Invoice $invoice) use ($rules) {
             $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $rules);
 
-            return $rule && $rule->amount === $invoice->amount && $rule->frequency === $invoice->frequency
+            return $rule && $rule?->amount === $invoice->amount && $rule->frequency === $invoice->frequency
                 ? $rule->frequency : null;
         })->all();
     }
@@ -91,7 +91,7 @@ class JobInvoices
                 $rule = $this->ruleFor((int) $invoice->year, $invoice->month, $previousRules);
 
                 return ! $invoice->recurring && ! $invoice->stops_recurrence && $rule
-                    && $invoice->amount === $rule->amount && $invoice->frequency === $rule->frequency;
+                    && $invoice->amount === $rule?->amount && $invoice->frequency === $rule->frequency;
             })->mapWithKeys(fn (Invoice $invoice) => [$invoice->id => true])->all();
         $localChanges = [];
 
@@ -99,6 +99,13 @@ class JobInvoices
             $invoice = $invoices->get($month);
             $amount = number_format((float) $data['amounts'][$month], 2, '.', '');
             $frequency = $data['frequencies'][$month] ?? null;
+
+            if ($invoice->cell_amount !== null) {
+                if ($invoice->cell_amount === $amount && ($followingFrequencies[$month] ?? null) === $frequency) {
+                    continue;
+                }
+                $invoice->update(['cell_amount' => null]);
+            }
 
             if ($frequency === null) {
                 if (($followingFrequencies[$month] ?? null) !== null) {
